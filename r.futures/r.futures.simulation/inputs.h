@@ -5,13 +5,22 @@
 #include <grass/segment.h>
 
 #include "map.h"
-enum development_type {DEV_TYPE_INITIAL = 0,
-                       DEV_TYPE_UNDEVELOPED = -1};
 
-enum DDF_subregions_source {DDF_DEFAULT = 0,
-                            DDF_POTENTIAL = -1,
-                            DDF_CUSTOM = -2,
-                            DDF_NONE = -3};
+#define NUM_ZONES 13
+
+enum development_type
+{
+    DEV_TYPE_INITIAL = 0,
+    DEV_TYPE_UNDEVELOPED = -1
+};
+
+enum DDF_subregions_source
+{
+    DDF_DEFAULT = 0,
+    DDF_POTENTIAL = -1,
+    DDF_CUSTOM = -2,
+    DDF_NONE = -3
+};
 struct Demand
 {
     const char *cells_filename;
@@ -50,7 +59,6 @@ struct PatchSizes
     int max_patch_size;
     // use single column for all regions
     bool single_column;
-
 };
 
 struct DepthDamageFunctions
@@ -81,6 +89,7 @@ struct Segments
     SEGMENT aggregated_predictor;
     SEGMENT probability;
     SEGMENT weight;
+    SEGMENT zone;
     SEGMENT density;
     SEGMENT density_capacity;
     SEGMENT HAND;
@@ -90,6 +99,7 @@ struct Segments
     SEGMENT adaptation;
     SEGMENT DDF_subregions;
     SEGMENT flood_depths;
+    bool use_zone;
     bool use_weight;
     bool use_potential_subregions;
     bool use_density;
@@ -104,6 +114,7 @@ struct RasterInputs
     char **predictors;
     const char *devpressure;
     const char *weights;
+    const char *zones;
     const char *density;
     const char *density_capacity;
     const char *HAND;
@@ -112,7 +123,6 @@ struct RasterInputs
     const char *adaptation;
     const char *DDF_regions;
 };
-
 
 struct DevelopableCell
 {
@@ -167,6 +177,19 @@ struct FloodInputs
     bool depth;
 };
 
+// struct to hold single id, weight pair
+struct Zone
+{
+    int zone_id;
+    float zone_weight;
+}
+
+// dictionary-like structure for all zone id, weight pairs
+struct ZoneWeight
+{
+    Zone zones[NUM_ZONES];
+};
+
 int get_developed_val_from_step(int step, bool abandon);
 size_t estimate_undev_size(struct RasterInputs inputs);
 void initialize_incentive(struct Potential *potential_info, float exponent);
@@ -196,5 +219,6 @@ void init_flood_segment(const struct FloodInputs *flood_inputs,
                         struct SegmentMemory segment_info);
 void update_flood_depth(int step, const struct FloodInputs *flood_inputs,
                         struct Segments *segments, map_float_t *max_flood_probability_map);
-
+/* function to convert zone id to weight*/
+int zone_to_weight(ZoneWeight *zw, int zone_id, float *zone_weight);
 #endif // FUTURES_INPUTS_H

@@ -35,12 +35,12 @@
 
 /**
     \file main.c
-    
+
     The main file containing both the model code and the data handing part.
-    
+
     The language of the code is subject to change. The goal is to use either
     C or C++, not both mixed as it is now. Update: only C is used now.
-    
+
     Major refactoring of the code is expected.
 */
 
@@ -65,18 +65,18 @@
 #include "redistribute.h"
 #include "climate.h"
 
-
 struct Developables *initialize_developables(int num_subregions, size_t undev_estimate)
 {
-    struct Developables *dev = (struct Developables *) G_malloc(sizeof(struct Developables));
+    struct Developables *dev = (struct Developables *)G_malloc(sizeof(struct Developables));
     dev->max_subregions = num_subregions;
-    dev->max = (size_t *) G_malloc(dev->max_subregions * sizeof(size_t));
-    dev->num = (size_t *) G_calloc(dev->max_subregions, sizeof(size_t));
-    dev->cells = (struct DevelopableCell **) G_malloc(dev->max_subregions * sizeof(struct DevelopableCell *));
-    for (int i = 0; i < dev->max_subregions; i++){
+    dev->max = (size_t *)G_malloc(dev->max_subregions * sizeof(size_t));
+    dev->num = (size_t *)G_calloc(dev->max_subregions, sizeof(size_t));
+    dev->cells = (struct DevelopableCell **)G_malloc(dev->max_subregions * sizeof(struct DevelopableCell *));
+    for (int i = 0; i < dev->max_subregions; i++)
+    {
         /* set smaller estimate, let large regions reallocate later */
         dev->max[i] = 0.75 * undev_estimate / num_subregions;
-        dev->cells[i] = (struct DevelopableCell *) G_malloc(dev->max[i] * sizeof(struct DevelopableCell));
+        dev->cells[i] = (struct DevelopableCell *)G_malloc(dev->max[i] * sizeof(struct DevelopableCell));
     }
     return dev;
 }
@@ -103,7 +103,8 @@ static int manage_memory(struct SegmentMemory *memory, struct Segments *segments
 
     if (input_memory > 0 && undev_size > 1e9 * input_memory)
         G_warning(_("Not sufficient memory, will attempt to use more "
-                    "than specified. Will need at least %d MB"), (int) (undev_size / 1.0e6));
+                    "than specified. Will need at least %d MB"),
+                  (int)(undev_size / 1.0e6));
 
     /* developed, subregions */
     size = sizeof(CELL) * 2;
@@ -111,14 +112,17 @@ static int manage_memory(struct SegmentMemory *memory, struct Segments *segments
     size += sizeof(FCELL) * 3;
     if (segments->use_weight)
         size += sizeof(FCELL);
+    if (segments->use_zone)
+        size += sizeof(FCELL);
     if (segments->use_potential_subregions)
         size += sizeof(CELL);
     /* density + capacity */
     if (segments->use_density)
         size += sizeof(FCELL) * 2;
     /* climate: HAND (F) + AC (F) + flood prob (F) + HUC (C) + adaptation (C) */
-    if (flood_inputs->size > 0) {
-        size += sizeof(FCELL); /* AC */
+    if (flood_inputs->size > 0)
+    {
+        size += sizeof(FCELL);    /* AC */
         size += sizeof(CELL) * 2; /* HUC, adaptation */
         if (flood_inputs->depth)
             size += sizeof(FCELL) * flood_inputs->num_return_periods; /* depths for diff RP */
@@ -139,7 +143,7 @@ static int manage_memory(struct SegmentMemory *memory, struct Segments *segments
     G_verbose_message(_("Number of segments in memory: %d of %d total"),
                       nseg, nseg_total);
     G_verbose_message(_("Estimated minimum memory footprint without using disk cache: %d MB"),
-                      (int) (estimate / 1.0e6));
+                      (int)(estimate / 1.0e6));
     return nseg;
 }
 
@@ -149,18 +153,19 @@ int main(int argc, char **argv)
     struct
     {
         struct Option
-                *developed, *subregions, *potentialSubregions, *predictors,
-                *devpressure, *nDevNeighbourhood, *devpressureApproach, *scalingFactor, *gamma,
-                *potentialFile, *numNeighbors, *discountFactor, *seedSearch,
-                *patchMean, *patchRange,
-                *incentivePower, *potentialWeight,
-                *cellDemandFile, *populationDemandFile, *separator,
-                *density, *densityCapacity, *outputDensity, *redevelopmentLag,
-                *redevelopmentPotentialFile, *redistributionMatrix, *redistributionMatrixOutput,
-                *HAND, *HAND_percentile, *floodInputFile, *floodLog,
-                *depthDamageFunc, *ddf_subregions, *response_func, *responseStddev,
-                *adaptations, *adaptiveCapacity, *HUCs, *outputAdaptation,
-                *patchFile, *numSteps, *output, *outputSeries, *seed, *memory;
+            *developed,
+            *subregions, *potentialSubregions, *predictors,
+            *devpressure, *nDevNeighbourhood, *devpressureApproach, *scalingFactor, *gamma,
+            *potentialFile, *numNeighbors, *discountFactor, *seedSearch,
+            *patchMean, *patchRange,
+            *incentivePower, *potentialWeight, *zoning,
+            *cellDemandFile, *populationDemandFile, *separator,
+            *density, *densityCapacity, *outputDensity, *redevelopmentLag,
+            *redevelopmentPotentialFile, *redistributionMatrix, *redistributionMatrixOutput,
+            *HAND, *HAND_percentile, *floodInputFile, *floodLog,
+            *depthDamageFunc, *ddf_subregions, *response_func, *responseStddev,
+            *adaptations, *adaptiveCapacity, *HUCs, *outputAdaptation,
+            *patchFile, *numSteps, *output, *outputSeries, *seed, *memory;
     } opt;
 
     struct
@@ -212,6 +217,7 @@ int main(int argc, char **argv)
     float leaving_population;
     bool overgrow;
     size_t undev_estimate;
+    struct ZoneWeight zone_weight;
 
     G_gisinit(argv[0]);
 
@@ -223,16 +229,16 @@ int main(int argc, char **argv)
     G_add_keyword(_("landscape"));
     G_add_keyword(_("modeling"));
     module->label =
-            _("Simulates landuse change using FUTure Urban-Regional Environment Simulation (FUTURES).");
+        _("Simulates landuse change using FUTure Urban-Regional Environment Simulation (FUTURES).");
     module->description =
-            _("Module uses Patch-Growing Algorithm (PGA) to"
-              " simulate urban-rural landscape structure development.");
+        _("Module uses Patch-Growing Algorithm (PGA) to"
+          " simulate urban-rural landscape structure development.");
 
     opt.developed = G_define_standard_option(G_OPT_R_INPUT);
     opt.developed->key = "developed";
     opt.developed->required = YES;
     opt.developed->description =
-            _("Raster map of developed areas (=1), undeveloped (=0) and excluded (no data)");
+        _("Raster map of developed areas (=1), undeveloped (=0) and excluded (no data)");
     opt.developed->guisection = _("Basic input");
 
     opt.subregions = G_define_standard_option(G_OPT_R_INPUT);
@@ -260,7 +266,7 @@ int main(int argc, char **argv)
     opt.devpressure->key = "development_pressure";
     opt.devpressure->required = YES;
     opt.devpressure->description =
-            _("Raster map of development pressure");
+        _("Raster map of development pressure");
     opt.devpressure->guisection = _("Development pressure");
 
     opt.nDevNeighbourhood = G_define_option();
@@ -301,14 +307,14 @@ int main(int argc, char **argv)
     opt.density->key = "density";
     opt.density->required = NO;
     opt.density->description =
-            _("Raster map of population density");
+        _("Raster map of population density");
     opt.density->guisection = _("Density");
 
     opt.densityCapacity = G_define_standard_option(G_OPT_R_INPUT);
     opt.densityCapacity->key = "density_capacity";
     opt.densityCapacity->required = NO;
     opt.densityCapacity->description =
-            _("Raster map of maximum capacity");
+        _("Raster map of maximum capacity");
     opt.densityCapacity->guisection = _("Density");
 
     opt.redevelopmentPotentialFile = G_define_standard_option(G_OPT_F_INPUT);
@@ -327,14 +333,14 @@ int main(int argc, char **argv)
     opt.redevelopmentLag->required = NO;
     opt.redevelopmentLag->options = "1-";
     opt.redevelopmentLag->description =
-            _("Number of steps before redevelopment can happen again in a cell developed during simulation");
+        _("Number of steps before redevelopment can happen again in a cell developed during simulation");
     opt.redevelopmentLag->guisection = _("Density");
 
     opt.output = G_define_standard_option(G_OPT_R_OUTPUT);
     opt.output->key = "output";
     opt.output->required = YES;
     opt.output->description =
-            _("State of the development at the end of simulation");
+        _("State of the development at the end of simulation");
     opt.output->guisection = _("Output");
 
     opt.outputSeries = G_define_standard_option(G_OPT_R_BASENAME_OUTPUT);
@@ -365,20 +371,20 @@ int main(int argc, char **argv)
     opt.cellDemandFile->key = "demand";
     opt.cellDemandFile->required = YES;
     opt.cellDemandFile->description =
-            _("CSV file with number of cells to convert for each step and subregion");
+        _("CSV file with number of cells to convert for each step and subregion");
     opt.cellDemandFile->guisection = _("Demand");
 
     opt.populationDemandFile = G_define_standard_option(G_OPT_F_INPUT);
     opt.populationDemandFile->key = "population_demand";
     opt.populationDemandFile->required = NO;
     opt.populationDemandFile->description =
-            _("CSV file with population size to accommodate");
+        _("CSV file with population size to accommodate");
     opt.populationDemandFile->guisection = _("Demand");
 
     opt.separator = G_define_standard_option(G_OPT_F_SEP);
     opt.separator->answer = "comma";
     opt.separator->description =
-            _("Separator used in input CSV files");
+        _("Separator used in input CSV files");
 
     opt.patchFile = G_define_standard_option(G_OPT_F_INPUT);
     opt.patchFile->key = "patch_sizes";
@@ -411,21 +417,21 @@ int main(int argc, char **argv)
     opt.HAND_percentile->required = NO;
     opt.HAND_percentile->options = "0-100";
     opt.HAND_percentile->description =
-            _("Percentile of HAND values within inundated area for depth estimation");
+        _("Percentile of HAND values within inundated area for depth estimation");
     opt.HAND_percentile->guisection = _("Climate scenarios");
 
     opt.floodInputFile = G_define_standard_option(G_OPT_F_INPUT);
     opt.floodInputFile->key = "flood_maps_file";
     opt.floodInputFile->required = NO;
     opt.floodInputFile->description =
-            _("CSV file with (step, return period, map of depth) or (step, map of return period)");
+        _("CSV file with (step, return period, map of depth) or (step, map of return period)");
     opt.floodInputFile->guisection = _("Climate scenarios");
 
     opt.floodLog = G_define_standard_option(G_OPT_F_OUTPUT);
     opt.floodLog->key = "flood_logfile";
     opt.floodLog->required = NO;
     opt.floodLog->description =
-            _("CSV file with (step, HUC ID, flood probability)");
+        _("CSV file with (step, HUC ID, flood probability)");
     opt.floodLog->guisection = _("Climate scenarios");
 
     opt.HUCs = G_define_standard_option(G_OPT_R_INPUT);
@@ -474,7 +480,7 @@ int main(int argc, char **argv)
     opt.response_func->required = NO;
     opt.response_func->multiple = YES;
     opt.response_func->description =
-            _("Coefficients of linear functions for flood response");
+        _("Coefficients of linear functions for flood response");
     opt.response_func->guisection = _("Climate scenarios");
 
     opt.responseStddev = G_define_option();
@@ -512,7 +518,7 @@ int main(int argc, char **argv)
     opt.seedSearch->description =
         _("The way location of a seed is determined (1: uniform distribution 2: development probability)");
     opt.seedSearch->guisection = _("PGA");
-    
+
     opt.patchMean = G_define_option();
     opt.patchMean->key = "compactness_mean";
     opt.patchMean->type = TYPE_DOUBLE;
@@ -541,12 +547,21 @@ int main(int argc, char **argv)
     opt.potentialWeight->key = "potential_weight";
     opt.potentialWeight->required = NO;
     opt.potentialWeight->label =
-            _("Raster map of weights altering development potential");
+        _("Raster map of weights altering development potential");
     opt.potentialWeight->description =
-            _("Values need to be between -1 and 1, where negative locally reduces"
-              "probability and positive increases probability.");
+        _("Values need to be between -1 and 1, where negative locally reduces"
+          "probability and positive increases probability.");
     opt.potentialWeight->guisection = _("Scenarios");
-    
+
+    opt.zoning = G_define_standard_option(G_OPT_R_INPUT);
+    opt.zoning->key = "zoning";
+    opt.zoning->required = NO;
+    opt.zoning->label =
+        _("Raster map of zoning districts used to alter development potential");
+    opt.zoning->description =
+        _("Values need to be between 1 and 13 indicating zoning district.");
+    opt.zoning->guisection = _("Scenarios");
+
     opt.incentivePower = G_define_option();
     opt.incentivePower->key = "incentive_power";
     opt.incentivePower->required = NO;
@@ -565,17 +580,17 @@ int main(int argc, char **argv)
     opt.seed->required = NO;
     opt.seed->label = _("Seed for random number generator");
     opt.seed->description =
-            _("The same seed can be used to obtain same results"
-              " or random seed can be generated by other means.");
+        _("The same seed can be used to obtain same results"
+          " or random seed can be generated by other means.");
     opt.seed->guisection = _("Random numbers");
 
     flg.generateSeed = G_define_flag();
     flg.generateSeed->key = 's';
     flg.generateSeed->label =
-            _("Generate random seed (result is non-deterministic)");
+        _("Generate random seed (result is non-deterministic)");
     flg.generateSeed->description =
-            _("Automatically generates random seed for random number"
-              " generator (use when you don't want to provide the seed option)");
+        _("Automatically generates random seed for random number"
+          " generator (use when you don't want to provide the seed option)");
     flg.generateSeed->guisection = _("Random numbers");
 
     opt.memory = G_define_option();
@@ -604,11 +619,13 @@ int main(int argc, char **argv)
 
     long seed_value;
 
-    if (flg.generateSeed->answer) {
+    if (flg.generateSeed->answer)
+    {
         seed_value = G_srand48_auto();
         G_message("Generated random seed (-s): %ld", seed_value);
     }
-    if (opt.seed->answer) {
+    if (opt.seed->answer)
+    {
         seed_value = atol(opt.seed->answer);
         // this does nothing since we are not using GRASS random function
         G_srand48(seed_value);
@@ -642,29 +659,38 @@ int main(int argc, char **argv)
     patch_info.strategy = SKIP;
     if (opt.redevelopmentLag->answer)
         patch_info.redevelopment_lag = atoi(opt.redevelopmentLag->answer);
-    
+
     num_steps = 0;
     if (opt.numSteps->answer)
         num_steps = atoi(opt.numSteps->answer);
-    
+
     num_predictors = 0;
     for (i = 0; opt.predictors->answers[i]; i++)
         num_predictors++;
-    
+
     segments.use_weight = false;
-    if (opt.potentialWeight->answer) {
+    if (opt.potentialWeight->answer)
+    {
         segments.use_weight = true;
     }
+    segments.use_zone = false;
+    if (opt.zoning->answer)
+    {
+        segments.use_zone = true;
+    }
     segments.use_potential_subregions = false;
-    if (opt.potentialSubregions->answer) {
+    if (opt.potentialSubregions->answer)
+    {
         segments.use_potential_subregions = true;
     }
     segments.use_density = false;
-    if (opt.density->answer) {
+    if (opt.density->answer)
+    {
         segments.use_density = true;
     }
     segments.use_climate = false;
-    if (opt.floodInputFile->answer) {
+    if (opt.floodInputFile->answer)
+    {
         segments.use_climate = true;
     }
     memory = -1;
@@ -673,7 +699,8 @@ int main(int argc, char **argv)
 
     flood_inputs.size = 0;
     flood_inputs.array = NULL;
-    if (opt.floodInputFile->answer) {
+    if (opt.floodInputFile->answer)
+    {
         flood_inputs.filename = opt.floodInputFile->answer;
         flood_inputs.separator = G_option_to_separator(opt.separator);
         read_flood_file(&flood_inputs);
@@ -681,17 +708,20 @@ int main(int argc, char **argv)
 
     potential_info.incentive_transform_size = 0;
     potential_info.incentive_transform = NULL;
-    if (opt.incentivePower->answer) {
+    if (opt.incentivePower->answer)
+    {
         exponent = atof(opt.incentivePower->answer);
-        if (exponent !=  1)  /* 1 is no-op */
+        if (exponent != 1) /* 1 is no-op */
             initialize_incentive(&potential_info, exponent);
     }
-    if (opt.redevelopmentPotentialFile->answer) {
+    if (opt.redevelopmentPotentialFile->answer)
+    {
         redev_potential_info.incentive_transform_size = 0;
         redev_potential_info.incentive_transform = NULL;
-        if (opt.incentivePower->answer) {
+        if (opt.incentivePower->answer)
+        {
             exponent = atof(opt.incentivePower->answer);
-            if (exponent !=  1)  /* 1 is no-op */
+            if (exponent != 1) /* 1 is no-op */
                 initialize_incentive(&redev_potential_info, exponent);
         }
     }
@@ -702,13 +732,17 @@ int main(int argc, char **argv)
     raster_inputs.predictors = opt.predictors->answers;
     if (opt.potentialWeight->answer)
         raster_inputs.weights = opt.potentialWeight->answer;
+    if (opt.zoning->answer)
+        raster_inputs.zones = opt.zoning->answer;
     if (opt.potentialSubregions->answer)
         raster_inputs.potential_regions = opt.potentialSubregions->answer;
-    if (opt.density->answer) {
+    if (opt.density->answer)
+    {
         raster_inputs.density = opt.density->answer;
         raster_inputs.density_capacity = opt.densityCapacity->answer;
     }
-    if (opt.redistributionMatrix->answer) {
+    if (opt.redistributionMatrix->answer)
+    {
         redistr_matrix.filename = opt.redistributionMatrix->answer;
         read_redistribution_matrix(&redistr_matrix);
     }
@@ -718,12 +752,14 @@ int main(int argc, char **argv)
     segment_info.in_memory = nseg;
 
     HAND_percentile = 0;
-    if (flood_inputs.array) {
+    if (flood_inputs.array)
+    {
         raster_inputs.adaptive_capacity = opt.adaptiveCapacity->answer;
         raster_inputs.HUC = opt.HUCs->answer;
         raster_inputs.DDF_regions = NULL;
         DDF.subregions_source = DDF_NONE;
-        if (opt.ddf_subregions->answer) {
+        if (opt.ddf_subregions->answer)
+        {
             /* if subregions map name used for other subregions, set NULL
                here so that no new input will be read */
             if (strcmp(opt.ddf_subregions->answer, opt.subregions->answer) == 0)
@@ -744,7 +780,8 @@ int main(int argc, char **argv)
         HUC_bbox_vals.size = 0;
         HUC_bbox_vals.array = NULL;
         raster_inputs.HAND = NULL;
-        if (!flood_inputs.depth) {
+        if (!flood_inputs.depth)
+        {
             if (!opt.HAND->answer)
                 G_fatal_error(_("When using flood probability rasters, HAND raster is required"));
             raster_inputs.HAND = opt.HAND->answer;
@@ -772,8 +809,9 @@ int main(int argc, char **argv)
     read_input_rasters(raster_inputs, &segments, segment_info, &region_map,
                        &reverse_region_map, &potential_region_map,
                        &HUC_map, &max_flood_probability_map,
-                       &DDF_region_map);
-    if (flood_inputs.array) {
+                       &DDF_region_map, &zone_weight);
+    if (flood_inputs.array)
+    {
         create_bboxes(&segments.HUC, &segments.developed, &bboxes);
     }
     /* create probability segment*/
@@ -792,7 +830,8 @@ int main(int argc, char **argv)
     read_potential_file(&potential_info,
                         opt.potentialSubregions->answer ? &potential_region_map : &region_map,
                         &predictor_map);
-    if (opt.redevelopmentPotentialFile->answer) {
+    if (opt.redevelopmentPotentialFile->answer)
+    {
         redev_potential_info.filename = opt.redevelopmentPotentialFile->answer;
         redev_potential_info.separator = G_option_to_separator(opt.separator);
         read_potential_file(&redev_potential_info,
@@ -808,7 +847,8 @@ int main(int argc, char **argv)
     G_verbose_message("Reading demand file...");
     demand_info.has_population = false;
     demand_info.cells_filename = opt.cellDemandFile->answer;
-    if (opt.populationDemandFile->answer) {
+    if (opt.populationDemandFile->answer)
+    {
         demand_info.has_population = true;
         demand_info.population_filename = opt.populationDemandFile->answer;
     }
@@ -818,28 +858,35 @@ int main(int argc, char **argv)
         num_steps = demand_info.max_steps;
 
     /* check redistribution matrix output files */
-    if (opt.redistributionMatrixOutput->answer) {
+    if (opt.redistributionMatrixOutput->answer)
+    {
         redistr_matrix.output_basename = opt.redistributionMatrixOutput->answer;
-        if (check_matrix_filenames_exist(&redistr_matrix, num_steps)) {
+        if (check_matrix_filenames_exist(&redistr_matrix, num_steps))
+        {
             if (!G_check_overwrite(argc, argv))
                 G_fatal_error(_("At least one of the requested matrix output files exists. Use --o to overwrite."));
         }
     }
-    if (opt.depthDamageFunc->answer) {
+    if (opt.depthDamageFunc->answer)
+    {
         /* if no DDF subregions, assume one DDF for entire area */
-        if (DDF.subregions_source == DDF_NONE) {
+        if (DDF.subregions_source == DDF_NONE)
+        {
             map_set(&DDF_region_map, "1", 0);
             read_DDF_file(&DDF, &DDF_region_map);
         }
         /* use subregions */
-        else if (DDF.subregions_source == DDF_DEFAULT) {
+        else if (DDF.subregions_source == DDF_DEFAULT)
+        {
             read_DDF_file(&DDF, &region_map);
         }
         /* use potential subregions */
-        else if (DDF.subregions_source == DDF_POTENTIAL) {
+        else if (DDF.subregions_source == DDF_POTENTIAL)
+        {
             read_DDF_file(&DDF, &potential_region_map);
         }
-        else {
+        else
+        {
             read_DDF_file(&DDF, &DDF_region_map);
         }
     }
@@ -854,11 +901,13 @@ int main(int argc, char **argv)
     patch_overflow = G_calloc(map_nitems(&region_map), sizeof(int));
 
     /* redevelopment */
-    if (segments.use_density) {
+    if (segments.use_density)
+    {
         dev_cells = initialize_developables(map_nitems(&region_map), undev_estimate);
         population_overflow = G_calloc(map_nitems(&region_map), sizeof(float));
     }
-    else {
+    else
+    {
         dev_cells = NULL;
         population_overflow = NULL;
     }
@@ -866,13 +915,15 @@ int main(int argc, char **argv)
     overgrow = true;
     G_verbose_message("Starting simulation...");
     leaving_population = 0;
-    for (step = 0; step < num_steps; step++) {
+    for (step = 0; step < num_steps; step++)
+    {
         recompute_probabilities(undev_cells, &segments, &potential_info, false);
         if (segments.use_density)
             recompute_probabilities(dev_cells, &segments, &redev_potential_info, true);
         if (step == num_steps - 1)
             overgrow = false;
-        for (region = 0; region < map_nitems(&region_map); region++) {
+        for (region = 0; region < map_nitems(&region_map); region++)
+        {
             region_id = map_get_int(&reverse_region_map, region);
             G_verbose_message("Computing step %d (out of %d), region %d (%d out of %d)",
                               step + 1, num_steps, *region_id,
@@ -882,7 +933,8 @@ int main(int argc, char **argv)
                          population_overflow, &redistr_matrix, step, region, &reverse_region_map, overgrow);
         }
         /* simulate abandonment due to climate (flooding) */
-        if (segments.use_climate) {
+        if (segments.use_climate)
+        {
             if (flood_inputs.depth)
                 update_flood_depth(step, &flood_inputs, &segments, &max_flood_probability_map);
             else
@@ -898,19 +950,22 @@ int main(int argc, char **argv)
                 write_redistribution_matrix(&redistr_matrix, step, num_steps);
         }
         /* export developed for that step */
-        if (opt.outputSeries->answer) {
+        if (opt.outputSeries->answer)
+        {
             name_step = name_for_step(opt.outputSeries->answer, step, num_steps);
             output_developed_step(&segments.developed, name_step,
                                   demand_info.years[step], -1, num_steps,
                                   segments.use_climate ? true : false);
         }
         /* export density for that step */
-        if (opt.outputDensity->answer) {
+        if (opt.outputDensity->answer)
+        {
             name_step = name_for_step(opt.outputDensity->answer, step, num_steps);
             output_step(&segments.density, &segments.developed, name_step, FCELL_TYPE);
         }
         /* export density for that step */
-        if (opt.outputAdaptation->answer) {
+        if (opt.outputAdaptation->answer)
+        {
             name_step = name_for_step(opt.outputAdaptation->answer, step, num_steps);
             output_step(&segments.adaptation, &segments.developed, name_step, CELL_TYPE);
         }
@@ -918,7 +973,7 @@ int main(int argc, char **argv)
 
     /* write */
     output_developed_step(&segments.developed, opt.output->answer,
-                          demand_info.years[0], demand_info.years[step-1],
+                          demand_info.years[0], demand_info.years[step - 1],
                           num_steps, segments.use_climate ? true : false);
     if (opt.floodLog->answer)
         write_flood_log(&flood_log, opt.floodLog->answer, &HUC_map);
@@ -929,22 +984,30 @@ int main(int argc, char **argv)
     Segment_close(&segments.devpressure);
     Segment_close(&segments.probability);
     Segment_close(&segments.aggregated_predictor);
-    if (opt.potentialWeight->answer) {
+    if (opt.potentialWeight->answer)
+    {
         Segment_close(&segments.weight);
+    }
+    if (opt.zoning->answer)
+    {
+        Segment_close(&segments.zone);
     }
     if (opt.potentialSubregions->answer)
         Segment_close(&segments.potential_subregions);
-    if (segments.use_density) {
+    if (segments.use_density)
+    {
         Segment_close(&segments.density);
         Segment_close(&segments.density_capacity);
     }
-    if (flood_inputs.array) {
+    if (flood_inputs.array)
+    {
         Segment_close(&segments.adaptive_capacity);
         Segment_close(&segments.HUC);
         Segment_close(&segments.adaptation);
         if (flood_inputs.depth)
             Segment_close(&segments.flood_depths);
-        else {
+        else
+        {
             Segment_close(&segments.HAND);
             Segment_close(&segments.flood_probability);
         }
@@ -963,18 +1026,21 @@ int main(int argc, char **argv)
     map_deinit(&predictor_map);
     map_deinit(&potential_region_map);
     map_deinit(&DDF_region_map);
-    if (demand_info.cells_table) {
+    if (demand_info.cells_table)
+    {
         for (int i = 0; i < demand_info.max_subregions; i++)
             G_free(demand_info.cells_table[i]);
         G_free(demand_info.cells_table);
         G_free(demand_info.years);
     }
-    if (demand_info.has_population) {
+    if (demand_info.has_population)
+    {
         for (int i = 0; i < demand_info.max_subregions; i++)
             G_free(demand_info.population_table[i]);
         G_free(demand_info.population_table);
     }
-    if (potential_info.predictors) {
+    if (potential_info.predictors)
+    {
         for (int i = 0; i < potential_info.max_predictors; i++)
             G_free(potential_info.predictors[i]);
         G_free(potential_info.predictors);
@@ -982,7 +1048,8 @@ int main(int argc, char **argv)
         G_free(potential_info.intercept);
         G_free(potential_info.predictor_indices);
     }
-    if (opt.redevelopmentPotentialFile->answer) {
+    if (opt.redevelopmentPotentialFile->answer)
+    {
         for (int i = 0; i < redev_potential_info.max_predictors; i++)
             G_free(redev_potential_info.predictors[i]);
         G_free(redev_potential_info.predictors);
@@ -995,7 +1062,8 @@ int main(int argc, char **argv)
     G_free(devpressure_info.matrix);
     if (potential_info.incentive_transform_size > 0)
         G_free(potential_info.incentive_transform);
-    if (undev_cells) {
+    if (undev_cells)
+    {
         G_free(undev_cells->num);
         G_free(undev_cells->max);
         for (int i = 0; i < undev_cells->max_subregions; i++)
@@ -1003,7 +1071,8 @@ int main(int argc, char **argv)
         G_free(undev_cells->cells);
         G_free(undev_cells);
     }
-    if (segments.use_density) {
+    if (segments.use_density)
+    {
         G_free(dev_cells->num);
         G_free(dev_cells->max);
         for (int i = 0; i < dev_cells->max_subregions; i++)
@@ -1020,4 +1089,3 @@ int main(int argc, char **argv)
 
     return EXIT_SUCCESS;
 }
-
