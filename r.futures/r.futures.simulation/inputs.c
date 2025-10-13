@@ -433,8 +433,8 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
                     }
                     if (!found)
                     {
+                        G_warning("Zone ID (%f) is not recognized. Setting to 0...", fc);
                         fc = 0;
-                        G_warning(_("Zone ID is not recognized. Setting to 0..."));
                     }
                     ((FCELL *)zones_row)[col] = fc;
                 }
@@ -1526,7 +1526,7 @@ void update_flood_depth(int step, const struct FloodInputs *flood_inputs, struct
 }
 
 // NOTE: could turn to void if I don't need to success indicator 1/0
-int zone_to_weight(struct ZoneWeight *zw, int id, float *weight)
+int zone_to_weight(struct ZoneWeight *zw, float id, float *weight)
 {
     for (int i = 0; i < NUM_ZONES; i++)
     {
