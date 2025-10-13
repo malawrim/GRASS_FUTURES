@@ -111,7 +111,7 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
                         map_int_t *reverse_region_map,
                         map_int_t *potential_region_map,
                         map_int_t *HUC_map, map_float_t *max_flood_probability_map,
-                        map_int_t *DDF_region_map, struct ZoneWeight *zone_weight)
+                        map_int_t *DDF_region_map, struct ZoneWeight *zone_weights)
 {
     int row, col;
     int rows, cols;
@@ -159,22 +159,33 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
     {
         fd_zones = Rast_open_old(inputs.zones, "");
         /* initialize zoning_weight struct (dictionary)*/
-        &zone_weight = {
-            .zones = {
-                {100, -0.1f},
-                {101, -0.1f},
-                {110, -0.43f},
-                {120, -0.65f},
-                {130, -0.77f},
-                {131, -0.78f},
-                {200, -0.13f},
-                {201, -0.0f},
-                {202, -0.1f},
-                {203, -0.81f},
-                {300, -0.08f},
-                {301, 1.0f},
-                {302, -1.0f},
-            }};
+        zone_weights = G_malloc(sizeof(struct ZoneWeight));
+        zone_weights->zones[0].zone_id = 100;
+        zone_weights->zones[0].zone_weight = -0.1;
+        zone_weights->zones[1].zone_id = 101;
+        zone_weights->zones[1].zone_weight = -0.1;
+        zone_weights->zones[2].zone_id = 110;
+        zone_weights->zones[2].zone_weight = -0.43;
+        zone_weights->zones[3].zone_id = 120;
+        zone_weights->zones[3].zone_weight = -0.65;
+        zone_weights->zones[4].zone_id = 130;
+        zone_weights->zones[4].zone_weight = -0.77;
+        zone_weights->zones[5].zone_id = 131;
+        zone_weights->zones[5].zone_weight = -0.78;
+        zone_weights->zones[6].zone_id = 200;
+        zone_weights->zones[6].zone_weight = -0.13;
+        zone_weights->zones[7].zone_id = 201;
+        zone_weights->zones[7].zone_weight = -0.0;
+        zone_weights->zones[8].zone_id = 202;
+        zone_weights->zones[8].zone_weight = -0.1;
+        zone_weights->zones[9].zone_id = 203;
+        zone_weights->zones[9].zone_weight = -0.81;
+        zone_weights->zones[10].zone_id = 300;
+        zone_weights->zones[10].zone_weight = -0.08;
+        zone_weights->zones[11].zone_id = 301;
+        zone_weights->zones[11].zone_weight = 1.0;
+        zone_weights->zones[12].zone_id = 302;
+        zone_weights->zones[12].zone_weight = -1.0;
     }
     if (segments->use_density)
     {
@@ -411,15 +422,19 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
                 else
                 {
                     fc = ((FCELL *)zones_row)[col];
-                    if (fc > 1)
+                    bool found = false;
+                    // check if zone district is valid
+                    for (int i = 0; i < NUM_ZONES; i++)
                     {
-                        G_warning(_("Zone weights are > 1, truncating..."));
-                        fc = 1;
+                        if (zone_weights->zones[i].zone_id == fc)
+                        {
+                            found = true;
+                        }
                     }
-                    else if (fc < -1)
+                    if (!found)
                     {
-                        fc = -1;
-                        G_warning(_("Zone weights are < -1, truncating..."));
+                        fc = 0;
+                        G_warning(_("Zone ID is not recognized. Setting to 0..."));
                     }
                     ((FCELL *)zones_row)[col] = fc;
                 }
@@ -1511,13 +1526,13 @@ void update_flood_depth(int step, const struct FloodInputs *flood_inputs, struct
 }
 
 // NOTE: could turn to void if I don't need to success indicator 1/0
-int zone_to_weight(ZoneWeight *zw, int id, float *weight)
+int zone_to_weight(struct ZoneWeight *zw, int id, float *weight)
 {
     for (int i = 0; i < NUM_ZONES; i++)
     {
         if (zw->zones[i].zone_id == id)
         {
-            *weight = zw->zones[i].value;
+            *weight = zw->zones[i].zone_weight;
             // found
             return 1;
         }

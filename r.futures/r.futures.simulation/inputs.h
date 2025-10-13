@@ -182,12 +182,12 @@ struct Zone
 {
     int zone_id;
     float zone_weight;
-}
+};
 
 // dictionary-like structure for all zone id, weight pairs
 struct ZoneWeight
 {
-    Zone zones[NUM_ZONES];
+    struct Zone zones[NUM_ZONES];
 };
 
 int get_developed_val_from_step(int step, bool abandon);
@@ -198,7 +198,7 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
                         map_int_t *reverse_region_map,
                         map_int_t *potential_region_map,
                         map_int_t *HUC_map, map_float_t *max_flood_probability_map,
-                        map_int_t *DDF_region_map);
+                        map_int_t *DDF_region_map, struct ZoneWeight *zone_weights);
 void read_predictors(struct RasterInputs inputs, struct Segments *segments,
                      const struct Potential *potential,
                      const struct SegmentMemory segment_info);
@@ -220,5 +220,5 @@ void init_flood_segment(const struct FloodInputs *flood_inputs,
 void update_flood_depth(int step, const struct FloodInputs *flood_inputs,
                         struct Segments *segments, map_float_t *max_flood_probability_map);
 /* function to convert zone id to weight*/
-int zone_to_weight(ZoneWeight *zw, int zone_id, float *zone_weight);
+int zone_to_weight(struct ZoneWeight *zw, int zone_id, float *zone_weights);
 #endif // FUTURES_INPUTS_H

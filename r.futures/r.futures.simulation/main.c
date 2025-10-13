@@ -217,7 +217,7 @@ int main(int argc, char **argv)
     float leaving_population;
     bool overgrow;
     size_t undev_estimate;
-    struct ZoneWeight zone_weight;
+    struct ZoneWeight zone_weights;
 
     G_gisinit(argv[0]);
 
@@ -809,7 +809,7 @@ int main(int argc, char **argv)
     read_input_rasters(raster_inputs, &segments, segment_info, &region_map,
                        &reverse_region_map, &potential_region_map,
                        &HUC_map, &max_flood_probability_map,
-                       &DDF_region_map, &zone_weight);
+                       &DDF_region_map, &zone_weights);
     if (flood_inputs.array)
     {
         create_bboxes(&segments.HUC, &segments.developed, &bboxes);
@@ -917,9 +917,9 @@ int main(int argc, char **argv)
     leaving_population = 0;
     for (step = 0; step < num_steps; step++)
     {
-        recompute_probabilities(undev_cells, &segments, &potential_info, false);
+        recompute_probabilities(undev_cells, &segments, &potential_info, false, &zone_weights);
         if (segments.use_density)
-            recompute_probabilities(dev_cells, &segments, &redev_potential_info, true);
+            recompute_probabilities(dev_cells, &segments, &redev_potential_info, true, &zone_weights);
         if (step == num_steps - 1)
             overgrow = false;
         for (region = 0; region < map_nitems(&region_map); region++)

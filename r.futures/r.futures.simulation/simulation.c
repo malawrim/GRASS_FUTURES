@@ -108,7 +108,7 @@ int get_seed(struct Developables *dev_cells, int region_idx, enum seed_search me
 double get_develop_probability_xy(struct Segments *segments,
                                   FCELL *values,
                                   struct Potential *potential_info,
-                                  int region_index, int row, int col)
+                                  int region_index, int row, int col, struct ZoneWeight *zone_weights)
 {
     float probability;
     int transformed_idx = 0;
@@ -154,16 +154,19 @@ double get_develop_probability_xy(struct Segments *segments,
     {
         Segment_get(&segments->zone, (void *)&zone, row, col);
         float weight;
-        if (zone_to_weight(&zone_weight, zone, &weight))
+        if (zone_to_weight(zone_weights, zone, &weight))
         {
             if (weight < 0)
                 probability *= 1 - fabs(weight);
             else if (weight > 0)
                 probability = probability + weight - probability * weight;
         }
+        // If there is no match just keep probability unchanged
         else
         {
-            G_fatal_error("Invalid zoning district (%d). Check that only valid integers are provided in the input zoning layer.", zone)
+            G_warning("No match found for zoning district (%f). No weights are applied for this districts.", zone);
+            // Alternatively could have fatal error here
+            // G_fatal_error("Invalid zoning district (%d). Check that only valid integers are provided in the input zoning layer.", zone)
         }
     }
 
@@ -184,7 +187,7 @@ double get_develop_probability_xy(struct Segments *segments,
 void recompute_probabilities(struct Developables *developable_cells,
                              struct Segments *segments,
                              struct Potential *potential_info,
-                             bool use_developed)
+                             bool use_developed, struct ZoneWeight *zone_weights)
 {
     int row, col, cols, rows;
     int id, idx, new_size;
@@ -241,7 +244,7 @@ void recompute_probabilities(struct Developables *developable_cells,
             developable_cells->cells[region][idx].tried = 0;
             /* get probability and update undevs and segment*/
             probability = get_develop_probability_xy(segments, values,
-                                                     potential_info, region, row, col);
+                                                     potential_info, region, row, col, zone_weights);
             Segment_put(&segments->probability, (void *)&probability, row, col);
             developable_cells->cells[region][idx].probability = probability;
 

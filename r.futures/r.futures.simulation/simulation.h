@@ -9,19 +9,22 @@
 #include "redistribute.h"
 #include "climate.h"
 
-
-enum seed_search {RANDOM, PROBABILITY};
+enum seed_search
+{
+    RANDOM,
+    PROBABILITY
+};
 
 int find_probable_seed(struct Developables *dev_cells, int region);
 int get_seed(struct Developables *dev_cells, int region_idx, enum seed_search method,
-              int *row, int *col);
+             int *row, int *col);
 double get_develop_probability_xy(struct Segments *segments,
                                   FCELL *values,
                                   struct Potential *potential_info,
-                                  int region_index, int row, int col);
+                                  int region_index, int row, int col, struct ZoneWeight *zone_weights);
 void recompute_probabilities(struct Developables *developable_cells,
                              struct Segments *segments,
-                             struct Potential *potential_info, bool use_developed);
+                             struct Potential *potential_info, bool use_developed, struct ZoneWeight *zone_weights);
 void attempt_grow_patch(struct Developables *dev_cells,
                         enum seed_search search_alg,
                         struct Segments *segments,
