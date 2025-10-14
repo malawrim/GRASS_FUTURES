@@ -180,8 +180,8 @@ struct FloodInputs
 // struct to hold single id, weight pair
 struct Zone
 {
-    int zone_id;
-    float zone_weight;
+    int id;
+    float weight;
 };
 
 // dictionary-like structure for all zone id, weight pairs
@@ -220,5 +220,5 @@ void init_flood_segment(const struct FloodInputs *flood_inputs,
 void update_flood_depth(int step, const struct FloodInputs *flood_inputs,
                         struct Segments *segments, map_float_t *max_flood_probability_map);
 /* function to convert zone id to weight*/
-int zone_to_weight(struct ZoneWeight *zw, int zone_id, float *zone_weights);
+int zone_to_weight(struct ZoneWeight *zw, int id, float *weight);
 #endif // FUTURES_INPUTS_H

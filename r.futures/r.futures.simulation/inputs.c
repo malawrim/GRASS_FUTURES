@@ -159,34 +159,34 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
     {
         fd_zones = Rast_open_old(inputs.zones, "");
         /* initialize zoning_weight struct (dictionary)*/
-        zone_weights->zones[0].zone_id = 100;
-        zone_weights->zones[0].zone_weight = -0.1;
-        zone_weights->zones[1].zone_id = 101;
-        zone_weights->zones[1].zone_weight = -0.1;
-        zone_weights->zones[2].zone_id = 110;
-        zone_weights->zones[2].zone_weight = -0.43;
-        zone_weights->zones[3].zone_id = 120;
-        zone_weights->zones[3].zone_weight = -0.65;
-        zone_weights->zones[4].zone_id = 130;
-        zone_weights->zones[4].zone_weight = -0.77;
-        zone_weights->zones[5].zone_id = 131;
-        zone_weights->zones[5].zone_weight = -0.78;
-        zone_weights->zones[6].zone_id = 200;
-        zone_weights->zones[6].zone_weight = -0.13;
-        zone_weights->zones[7].zone_id = 201;
-        zone_weights->zones[7].zone_weight = -0.0;
-        zone_weights->zones[8].zone_id = 202;
-        zone_weights->zones[8].zone_weight = -0.1;
-        zone_weights->zones[9].zone_id = 203;
-        zone_weights->zones[9].zone_weight = -0.81;
-        zone_weights->zones[10].zone_id = 300;
-        zone_weights->zones[10].zone_weight = -0.08;
-        zone_weights->zones[11].zone_id = 301;
-        zone_weights->zones[11].zone_weight = 1.0;
-        zone_weights->zones[12].zone_id = 302;
-        zone_weights->zones[12].zone_weight = -1.0;
-        zone_weights->zones[13].zone_id = 0; // null value, no weight
-        zone_weights->zones[13].zone_weight = 0;
+        zone_weights->zones[0].id = 100;
+        zone_weights->zones[0].weight = -0.1;
+        zone_weights->zones[1].id = 101;
+        zone_weights->zones[1].weight = -0.1;
+        zone_weights->zones[2].id = 110;
+        zone_weights->zones[2].weight = -0.43;
+        zone_weights->zones[3].id = 120;
+        zone_weights->zones[3].weight = -0.65;
+        zone_weights->zones[4].id = 130;
+        zone_weights->zones[4].weight = -0.77;
+        zone_weights->zones[5].id = 131;
+        zone_weights->zones[5].weight = -0.78;
+        zone_weights->zones[6].id = 200;
+        zone_weights->zones[6].weight = -0.13;
+        zone_weights->zones[7].id = 201;
+        zone_weights->zones[7].weight = -0.0;
+        zone_weights->zones[8].id = 202;
+        zone_weights->zones[8].weight = -0.1;
+        zone_weights->zones[9].id = 203;
+        zone_weights->zones[9].weight = -0.81;
+        zone_weights->zones[10].id = 300;
+        zone_weights->zones[10].weight = -0.08;
+        zone_weights->zones[11].id = 301;
+        zone_weights->zones[11].weight = 1.0;
+        zone_weights->zones[12].id = 302;
+        zone_weights->zones[12].weight = -1.0;
+        zone_weights->zones[13].id = 0; // null value, no weight
+        zone_weights->zones[13].weight = 0;
     }
     if (segments->use_density)
     {
@@ -427,7 +427,7 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
                     // check if zone district is valid
                     for (int i = 0; i < NUM_ZONES; i++)
                     {
-                        if (zone_weights->zones[i].zone_id == c)
+                        if (zone_weights->zones[i].id == c)
                         {
                             found = true;
                         }
@@ -1531,9 +1531,9 @@ int zone_to_weight(struct ZoneWeight *zw, int id, float *weight)
 {
     for (int i = 0; i < NUM_ZONES; i++)
     {
-        if (zw->zones[i].zone_id == id)
+        if (zw->zones[i].id == id)
         {
-            *weight = zw->zones[i].zone_weight;
+            *weight = zw->zones[i].weight;
             // found
             return 1;
         }
