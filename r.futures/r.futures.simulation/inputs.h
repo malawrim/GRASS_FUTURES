@@ -6,8 +6,6 @@
 
 #include "map.h"
 
-#define NUM_ZONES 14
-
 enum development_type
 {
     DEV_TYPE_INITIAL = 0,
@@ -182,12 +180,18 @@ struct Zone
 {
     int id;
     float weight;
+    int region;
 };
 
 // dictionary-like structure for all zone id, weight pairs
 struct ZoneWeight
 {
-    struct Zone zones[NUM_ZONES];
+    struct Zone *zones;
+    int num_zones;
+    int num_regions;
+    double *intercept;
+    const char *filename;
+    const char *separator;
 };
 
 int get_developed_val_from_step(int step, bool abandon);
@@ -198,7 +202,7 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
                         map_int_t *reverse_region_map,
                         map_int_t *potential_region_map,
                         map_int_t *HUC_map, map_float_t *max_flood_probability_map,
-                        map_int_t *DDF_region_map, struct ZoneWeight *zone_weights);
+                        map_int_t *DDF_region_map);
 void read_predictors(struct RasterInputs inputs, struct Segments *segments,
                      const struct Potential *potential,
                      const struct SegmentMemory segment_info);
@@ -220,5 +224,7 @@ void init_flood_segment(const struct FloodInputs *flood_inputs,
 void update_flood_depth(int step, const struct FloodInputs *flood_inputs,
                         struct Segments *segments, map_float_t *max_flood_probability_map);
 /* function to convert zone id to weight*/
-int zone_to_weight(struct ZoneWeight *zw, int id, float *weight);
+int zone_to_weight(struct ZoneWeight *zw, int id, float *weight, int region_idx);
+/* function to read zone weights from file */
+void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map);
 #endif // FUTURES_INPUTS_H

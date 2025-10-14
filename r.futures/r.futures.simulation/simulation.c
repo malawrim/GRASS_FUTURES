@@ -154,7 +154,7 @@ double get_develop_probability_xy(struct Segments *segments,
     {
         Segment_get(&segments->zone, (void *)&zone, row, col);
         float weight;
-        if (zone_to_weight(zone_weights, zone, &weight))
+        if (zone_to_weight(zone_weights, zone, &weight, region_index))
         {
             if (weight < 0)
                 probability *= 1 - fabs(weight);

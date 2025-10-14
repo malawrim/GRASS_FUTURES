@@ -111,7 +111,7 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
                         map_int_t *reverse_region_map,
                         map_int_t *potential_region_map,
                         map_int_t *HUC_map, map_float_t *max_flood_probability_map,
-                        map_int_t *DDF_region_map, struct ZoneWeight *zone_weights)
+                        map_int_t *DDF_region_map)
 {
     int row, col;
     int rows, cols;
@@ -156,38 +156,7 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
     if (segments->use_weight)
         fd_weights = Rast_open_old(inputs.weights, "");
     if (segments->use_zone)
-    {
         fd_zones = Rast_open_old(inputs.zones, "");
-        /* initialize zoning_weight struct (dictionary)*/
-        zone_weights->zones[0].id = 100;
-        zone_weights->zones[0].weight = -0.1;
-        zone_weights->zones[1].id = 101;
-        zone_weights->zones[1].weight = -0.1;
-        zone_weights->zones[2].id = 110;
-        zone_weights->zones[2].weight = -0.43;
-        zone_weights->zones[3].id = 120;
-        zone_weights->zones[3].weight = -0.65;
-        zone_weights->zones[4].id = 130;
-        zone_weights->zones[4].weight = -0.77;
-        zone_weights->zones[5].id = 131;
-        zone_weights->zones[5].weight = -0.78;
-        zone_weights->zones[6].id = 200;
-        zone_weights->zones[6].weight = -0.13;
-        zone_weights->zones[7].id = 201;
-        zone_weights->zones[7].weight = -0.0;
-        zone_weights->zones[8].id = 202;
-        zone_weights->zones[8].weight = -0.1;
-        zone_weights->zones[9].id = 203;
-        zone_weights->zones[9].weight = -0.81;
-        zone_weights->zones[10].id = 300;
-        zone_weights->zones[10].weight = -0.08;
-        zone_weights->zones[11].id = 301;
-        zone_weights->zones[11].weight = 1.0;
-        zone_weights->zones[12].id = 302;
-        zone_weights->zones[12].weight = -1.0;
-        zone_weights->zones[13].id = 0; // null value, no weight
-        zone_weights->zones[13].weight = 0;
-    }
     if (segments->use_density)
     {
         fd_density = Rast_open_old(inputs.density, "");
@@ -423,20 +392,6 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
                 else
                 {
                     c = ((CELL *)zones_row)[col];
-                    bool found = false;
-                    // check if zone district is valid
-                    for (int i = 0; i < NUM_ZONES; i++)
-                    {
-                        if (zone_weights->zones[i].id == c)
-                        {
-                            found = true;
-                        }
-                    }
-                    if (!found)
-                    {
-                        G_warning("Zone ID (%d) is not recognized. Setting to 0...", c);
-                        c = 0;
-                    }
                     ((CELL *)zones_row)[col] = c;
                 }
             }
@@ -876,7 +831,7 @@ void read_potential_file(struct Potential *potentialInfo, map_int_t *region_map,
                       potentialInfo->filename);
     header_tokens = G_tokenize2(buf, potentialInfo->separator, td);
     header_ntokens = G_number_of_tokens(header_tokens);
-    /* num predictors minus region id, intercept and devperssure */
+    /* num predictors minus region id, intercept and devpressure */
     int num_predictors = header_ntokens - 3;
     if (num_predictors < 0)
         G_fatal_error(_("Incorrect header in development potential file <%s>"),
@@ -1526,19 +1481,163 @@ void update_flood_depth(int step, const struct FloodInputs *flood_inputs, struct
         map_set(max_flood_probability_map, key, max_rp);
 }
 
-// NOTE: could turn to void if I don't need to success indicator 1/0
-int zone_to_weight(struct ZoneWeight *zw, int id, float *weight)
+void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map)
 {
-    for (int i = 0; i < NUM_ZONES; i++)
+    FILE *fp;
+    if ((fp = fopen(zone_weights->filename, "r")) == NULL)
+        G_fatal_error(_("Cannot open zone weights file <%s>"),
+                      zone_weights->filename);
+
+    const char *td = "\"";
+    char **tokens;
+    char **header_tokens;
+    int header_ntokens;
+    int ntokens;
+
+    size_t buflen = 4000;
+    char buf[buflen];
+    if (G_getl2(buf, buflen, fp) == 0)
+        G_fatal_error(_("Zone weights file <%s>"
+                        " contains less than one line"),
+                      zone_weights->filename);
+    header_tokens = G_tokenize2(buf, zone_weights->separator, td);
+    header_ntokens = G_number_of_tokens(header_tokens);
+    /* number of zones is number of headers minus 2 (region ID and intercept)*/
+    int num_zones = header_ntokens - 2;
+    /* TODO could add a check here against the number of unique zones in zoning file*/
+    if (header_ntokens < 2)
+        G_fatal_error(_("Incorrect header in zone weights file <%s>"),
+                      zone_weights->filename);
+    zone_weights->num_zones = num_zones;
+    zone_weights->intercept = (double *)G_malloc(map_nitems(region_map) * sizeof(double));
+    // TODO struct Zone ** or struct Zone *
+    /* If no zones are passed to file, set to default */
+    if (num_zones == 0)
     {
-        if (zw->zones[i].id == id)
-        {
-            *weight = zw->zones[i].weight;
-            // found
-            return 1;
-        }
+        zone_weights->num_zones = 14;
+        zone_weights->num_regions = 0;
+        zone_weights->zones = (struct Zone *)G_malloc(sizeof(struct Zone) * zone_weights->num_zones);
+        zone_weights->zones[0].id = 100;
+        zone_weights->zones[0].weight = -0.1;
+        zone_weights->zones[1].id = 101;
+        zone_weights->zones[1].weight = -0.1;
+        zone_weights->zones[2].id = 110;
+        zone_weights->zones[2].weight = -0.43;
+        zone_weights->zones[3].id = 120;
+        zone_weights->zones[3].weight = -0.65;
+        zone_weights->zones[4].id = 130;
+        zone_weights->zones[4].weight = -0.77;
+        zone_weights->zones[5].id = 131;
+        zone_weights->zones[5].weight = -0.78;
+        zone_weights->zones[6].id = 200;
+        zone_weights->zones[6].weight = -0.13;
+        zone_weights->zones[7].id = 201;
+        zone_weights->zones[7].weight = 0.0;
+        zone_weights->zones[8].id = 202;
+        zone_weights->zones[8].weight = -0.1;
+        zone_weights->zones[9].id = 203;
+        zone_weights->zones[9].weight = -0.81;
+        zone_weights->zones[10].id = 300;
+        zone_weights->zones[10].weight = -0.08;
+        zone_weights->zones[11].id = 301;
+        zone_weights->zones[11].weight = 1.0;
+        zone_weights->zones[12].id = 302;
+        zone_weights->zones[12].weight = -1.0;
+        zone_weights->zones[13].id = 0; // null value, no weight
+        zone_weights->zones[13].weight = 0;
     }
-    *weight = 0;
-    // not found
-    return 0;
+    else
+    {
+        zone_weights->num_regions = map_nitems(region_map);
+        zone_weights->zones = (struct Zone *)G_malloc(num_zones * zone_weights->num_regions * sizeof(struct Zone));
+    }
+    while (G_getl2(buf, buflen, fp))
+    {
+        if (buf[0] == '\0')
+            continue;
+        tokens = G_tokenize2(buf, zone_weights->separator, td);
+        ntokens = G_number_of_tokens(tokens);
+        if (ntokens < 2)
+            G_fatal_error(_("Wrong number of columns (%s) in zone weights file, should be at least 2"), buf);
+
+        int *idx;
+        int region;
+        double coef_intercept;
+        int j;
+        double val;
+        int zone_id;
+
+        G_chop(tokens[0]);
+        region = atoi(tokens[0]);
+        idx = map_get_int(region_map, region);
+        /* I think I might be able to use *idx instead of region_counter but I need to double check
+           what map_get_int returns, is it an index 0-whatever or a FIP code*/
+        if (idx)
+        {
+            G_chop(tokens[1]);
+            coef_intercept = atof(tokens[1]);
+            zone_weights->intercept[*idx] = coef_intercept;
+
+            /* If zones are included in file, set zones per region */
+            if (num_zones > 0)
+            {
+                for (j = 2; j <= num_zones; j++)
+                {
+                    G_chop(tokens[j]);
+                    G_chop(header_tokens[j]);
+                    val = atof(tokens[j]);
+                    zone_id = atoi(header_tokens[j]);
+                    zone_weights->zones[j + *idx].region = *idx;
+                    zone_weights->zones[j + *idx].id = zone_id;
+                    zone_weights->zones[j + *idx].weight = val;
+                }
+            }
+        }
+        // else ignoring the line with region which is not used
+
+        G_free_tokens(tokens);
+    }
+
+    fclose(fp);
+}
+
+// NOTE: could turn to void if I don't need a success indicator 1/0
+int zone_to_weight(struct ZoneWeight *zw, int id, float *weight, int region_idx)
+{
+    int num_zones = zw->num_zones;
+    int num_regions = zw->num_regions;
+    if (num_regions > 0)
+    {
+        for (int i = 0; i <= (num_zones * num_regions); i++)
+        {
+            // TODO need to figure out how to check for the region specific zoning rules
+            // if (zw->zones[i].id == id) this works but the uncommented line doesn't
+            if ((zw->zones[i].id == id) && (zw->zones[i].region == region_idx))
+            {
+                *weight = zw->zones[i].weight;
+                // found
+                return 1;
+            }
+        }
+        *weight = 0;
+        // not found
+        return 0;
+    }
+    else
+    {
+        for (int i = 0; i <= num_zones; i++)
+        {
+            /* TODO There is a better way to do this - somehow separate out the zones by region*/
+            /* TODO haven't used the intercepts in anyway yet*/
+            if (zw->zones[i].id == id)
+            {
+                *weight = zw->zones[i].weight;
+                // found
+                return 1;
+            }
+        }
+        *weight = 0;
+        // not found
+        return 0;
+    }
 }

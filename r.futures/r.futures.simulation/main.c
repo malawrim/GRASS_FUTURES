@@ -158,7 +158,7 @@ int main(int argc, char **argv)
             *devpressure, *nDevNeighbourhood, *devpressureApproach, *scalingFactor, *gamma,
             *potentialFile, *numNeighbors, *discountFactor, *seedSearch,
             *patchMean, *patchRange,
-            *incentivePower, *potentialWeight, *zoning,
+            *incentivePower, *potentialWeight, *zoning, *zoningFile,
             *cellDemandFile, *populationDemandFile, *separator,
             *density, *densityCapacity, *outputDensity, *redevelopmentLag,
             *redevelopmentPotentialFile, *redistributionMatrix, *redistributionMatrixOutput,
@@ -553,6 +553,7 @@ int main(int argc, char **argv)
           "probability and positive increases probability.");
     opt.potentialWeight->guisection = _("Scenarios");
 
+    /* TODO how do I link the zoning and zoningFile parameters? If one is provided we need the other*/
     opt.zoning = G_define_standard_option(G_OPT_R_INPUT);
     opt.zoning->key = "zoning";
     opt.zoning->required = NO;
@@ -561,6 +562,16 @@ int main(int argc, char **argv)
     opt.zoning->description =
         _("Values need to be between 1 and 13 indicating zoning district.");
     opt.zoning->guisection = _("Scenarios");
+
+    opt.zoningFile = G_define_standard_option(G_OPT_F_INPUT);
+    opt.zoningFile->key = "zoning_weights";
+    opt.zoningFile->required = NO;
+    opt.zoningFile->label =
+        _("CSV file with zonings weights per region");
+    opt.zoningFile->description =
+        _("Each line should contain region ID followed"
+          " by an intercept indicating weight per region and each unique zoning district.");
+    opt.zoningFile->guisection = _("Scenarios");
 
     opt.incentivePower = G_define_option();
     opt.incentivePower->key = "incentive_power";
@@ -809,7 +820,7 @@ int main(int argc, char **argv)
     read_input_rasters(raster_inputs, &segments, segment_info, &region_map,
                        &reverse_region_map, &potential_region_map,
                        &HUC_map, &max_flood_probability_map,
-                       &DDF_region_map, &zone_weights);
+                       &DDF_region_map);
     if (flood_inputs.array)
     {
         create_bboxes(&segments.HUC, &segments.developed, &bboxes);
@@ -891,6 +902,14 @@ int main(int argc, char **argv)
         }
     }
     initialize_flood_log(&flood_log, num_steps * map_nitems(&HUC_map));
+
+    if (opt.zoning->answer)
+    {
+        zone_weights.filename = opt.zoningFile->answer;
+        zone_weights.separator = G_option_to_separator(opt.separator);
+        /* TODO change this to either allow user to introduce a zoning region map or replace ternary operator with &region_map*/
+        read_zone_file(&zone_weights, opt.potentialSubregions->answer ? &potential_region_map : &region_map);
+    }
 
     /* read Patch sizes file */
     G_verbose_message("Reading patch size file...");
