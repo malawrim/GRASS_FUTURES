@@ -6,7 +6,7 @@
 
 #include "map.h"
 
-#define NUM_ZONES 13
+#define NUM_ZONES 14
 
 enum development_type
 {
@@ -220,5 +220,5 @@ void init_flood_segment(const struct FloodInputs *flood_inputs,
 void update_flood_depth(int step, const struct FloodInputs *flood_inputs,
                         struct Segments *segments, map_float_t *max_flood_probability_map);
 /* function to convert zone id to weight*/
-int zone_to_weight(struct ZoneWeight *zw, float zone_id, float *zone_weights);
+int zone_to_weight(struct ZoneWeight *zw, int zone_id, float *zone_weights);
 #endif // FUTURES_INPUTS_H

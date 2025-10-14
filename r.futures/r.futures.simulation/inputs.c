@@ -131,7 +131,7 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
     CELL *pot_subregions_row = NULL;
     FCELL *devpressure_row;
     FCELL *weights_row = NULL;
-    FCELL *zones_row = NULL;
+    CELL *zones_row = NULL;
     FCELL *density_row = NULL;
     FCELL *density_capacity_row = NULL;
     FCELL *HAND_row = NULL;
@@ -159,7 +159,6 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
     {
         fd_zones = Rast_open_old(inputs.zones, "");
         /* initialize zoning_weight struct (dictionary)*/
-        zone_weights = G_malloc(sizeof(struct ZoneWeight));
         zone_weights->zones[0].zone_id = 100;
         zone_weights->zones[0].zone_weight = -0.1;
         zone_weights->zones[1].zone_id = 101;
@@ -186,6 +185,8 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
         zone_weights->zones[11].zone_weight = 1.0;
         zone_weights->zones[12].zone_id = 302;
         zone_weights->zones[12].zone_weight = -1.0;
+        zone_weights->zones[13].zone_id = 0; // null value, no weight
+        zone_weights->zones[13].zone_weight = 0;
     }
     if (segments->use_density)
     {
@@ -229,7 +230,7 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
     if (segments->use_zone)
         if (Segment_open(&segments->zone, G_tempfile(), rows,
                          cols, segment_info.rows, segment_info.cols,
-                         Rast_cell_size(FCELL_TYPE), segment_info.in_memory) != 1)
+                         Rast_cell_size(CELL_TYPE), segment_info.in_memory) != 1)
             G_fatal_error(_("Cannot create temporary file with segments of a raster map of zones"));
     /* Segment open potential_subregions */
     if (segments->use_potential_subregions)
@@ -281,7 +282,7 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
     if (segments->use_weight)
         weights_row = Rast_allocate_buf(FCELL_TYPE);
     if (segments->use_zone)
-        zones_row = Rast_allocate_buf(FCELL_TYPE);
+        zones_row = Rast_allocate_buf(CELL_TYPE);
     if (segments->use_potential_subregions)
         pot_subregions_row = Rast_allocate_buf(CELL_TYPE);
     if (segments->use_density)
@@ -310,7 +311,7 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
         if (segments->use_weight)
             Rast_get_row(fd_weights, weights_row, row, FCELL_TYPE);
         if (segments->use_zone)
-            Rast_get_row(fd_zones, zones_row, row, FCELL_TYPE);
+            Rast_get_row(fd_zones, zones_row, row, CELL_TYPE);
         if (segments->use_potential_subregions)
             Rast_get_row(fd_pot_reg, pot_subregions_row, row, CELL_TYPE);
         if (segments->use_density)
@@ -414,29 +415,29 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
             /* zones - must be in range -1, 1*/
             if (segments->use_zone)
             {
-                if (Rast_is_null_value(&((FCELL *)zones_row)[col], FCELL_TYPE))
+                if (Rast_is_null_value(&((CELL *)zones_row)[col], CELL_TYPE))
                 {
-                    ((FCELL *)zones_row)[col] = 0;
+                    ((CELL *)zones_row)[col] = 0;
                     isnull = true;
                 }
                 else
                 {
-                    fc = ((FCELL *)zones_row)[col];
+                    c = ((CELL *)zones_row)[col];
                     bool found = false;
                     // check if zone district is valid
                     for (int i = 0; i < NUM_ZONES; i++)
                     {
-                        if (zone_weights->zones[i].zone_id == fc)
+                        if (zone_weights->zones[i].zone_id == c)
                         {
                             found = true;
                         }
                     }
                     if (!found)
                     {
-                        G_warning("Zone ID (%f) is not recognized. Setting to 0...", fc);
-                        fc = 0;
+                        G_warning("Zone ID (%d) is not recognized. Setting to 0...", c);
+                        c = 0;
                     }
-                    ((FCELL *)zones_row)[col] = fc;
+                    ((CELL *)zones_row)[col] = c;
                 }
             }
             /* flooding; run only for cells which will be part of simulation
@@ -1526,7 +1527,7 @@ void update_flood_depth(int step, const struct FloodInputs *flood_inputs, struct
 }
 
 // NOTE: could turn to void if I don't need to success indicator 1/0
-int zone_to_weight(struct ZoneWeight *zw, float id, float *weight)
+int zone_to_weight(struct ZoneWeight *zw, int id, float *weight)
 {
     for (int i = 0; i < NUM_ZONES; i++)
     {

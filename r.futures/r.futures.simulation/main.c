@@ -113,7 +113,7 @@ static int manage_memory(struct SegmentMemory *memory, struct Segments *segments
     if (segments->use_weight)
         size += sizeof(FCELL);
     if (segments->use_zone)
-        size += sizeof(FCELL);
+        size += sizeof(CELL);
     if (segments->use_potential_subregions)
         size += sizeof(CELL);
     /* density + capacity */

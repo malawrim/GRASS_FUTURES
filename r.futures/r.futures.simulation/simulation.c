@@ -115,7 +115,7 @@ double get_develop_probability_xy(struct Segments *segments,
     FCELL devpressure_val;
     FCELL predictors_val;
     FCELL weight;
-    FCELL zone;
+    CELL zone;
     CELL pot_index;
 
     Segment_get(&segments->devpressure, (void *)&devpressure_val, row, col);
@@ -164,7 +164,7 @@ double get_develop_probability_xy(struct Segments *segments,
         // If there is no match just keep probability unchanged
         else
         {
-            G_warning("No match found for zoning district (%f). No weights are applied for this districts.", zone);
+            G_warning("No match found for zoning district (%d). No weights are applied for this districts.", zone);
             // Alternatively could have fatal error here
             // G_fatal_error("Invalid zoning district (%d). Check that only valid integers are provided in the input zoning layer.", zone)
         }
