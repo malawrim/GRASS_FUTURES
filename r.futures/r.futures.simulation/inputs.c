@@ -1538,6 +1538,7 @@ int zone_to_weight(struct ZoneWeight *zw, int id, float *weight)
             return 1;
         }
     }
+    *weight = 0;
     // not found
     return 0;
 }
