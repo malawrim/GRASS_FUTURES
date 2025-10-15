@@ -161,12 +161,10 @@ double get_develop_probability_xy(struct Segments *segments,
             else if (weight > 0)
                 probability = probability + weight - probability * weight;
         }
-        // If there is no match just keep probability unchanged
+        // If there is no match just keep probability unchanged and print warning
         else
         {
             G_warning("No match found for zoning district (%d). No weights are applied for this districts.", zone);
-            // Alternatively could have fatal error here
-            // G_fatal_error("Invalid zoning district (%d). Check that only valid integers are provided in the input zoning layer.", zone)
         }
     }
 

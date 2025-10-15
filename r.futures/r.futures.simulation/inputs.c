@@ -1603,20 +1603,18 @@ void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map)
     fclose(fp);
 }
 
-// NOTE: could turn to void if I don't need a success indicator 1/0
-int zone_to_weight(struct ZoneWeight *zw, int id, float *weight, int region_idx)
+int zone_to_weight(struct ZoneWeight *zone_weights, int id, float *weight, int region_idx)
 {
-    int num_zones = zw->num_zones;
-    int num_regions = zw->num_regions;
+    int num_zones = zone_weights->num_zones;
+    int num_regions = zone_weights->num_regions;
+    /* TODO haven't used the intercepts in anyway yet*/
     if (num_regions > 0)
     {
         for (int i = 0; i <= (num_zones * num_regions); i++)
         {
-            // TODO need to figure out how to check for the region specific zoning rules
-            // if (zw->zones[i].id == id) this works but the uncommented line doesn't
-            if ((zw->zones[i].id == id) && (zw->zones[i].region == region_idx))
+            if ((zone_weights->zones[i].id == id) && (zone_weights->zones[i].region == region_idx))
             {
-                *weight = zw->zones[i].weight;
+                *weight = zone_weights->zones[i].weight;
                 // found
                 return 1;
             }
@@ -1629,11 +1627,9 @@ int zone_to_weight(struct ZoneWeight *zw, int id, float *weight, int region_idx)
     {
         for (int i = 0; i <= num_zones; i++)
         {
-            /* TODO There is a better way to do this - somehow separate out the zones by region*/
-            /* TODO haven't used the intercepts in anyway yet*/
-            if (zw->zones[i].id == id)
+            if (zone_weights->zones[i].id == id)
             {
-                *weight = zw->zones[i].weight;
+                *weight = zone_weights->zones[i].weight;
                 // found
                 return 1;
             }

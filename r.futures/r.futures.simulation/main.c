@@ -560,7 +560,8 @@ int main(int argc, char **argv)
     opt.zoning->label =
         _("Raster map of zoning districts used to alter development potential");
     opt.zoning->description =
-        _("Values need to be between 1 and 13 indicating zoning district.");
+        _("Values indicating zoning district. Values should either relate to what is included in zoning_weights file"
+          " or should be values from 100-302 to align with default zoning districts (see documentation for more details.)");
     opt.zoning->guisection = _("Scenarios");
 
     opt.zoningFile = G_define_standard_option(G_OPT_F_INPUT);
@@ -570,7 +571,8 @@ int main(int argc, char **argv)
         _("CSV file with zonings weights per region");
     opt.zoningFile->description =
         _("Each line should contain region ID followed"
-          " by an intercept indicating weight per region and each unique zoning district.");
+          " by an intercept indicating weight per region and weights for each unique zoning district."
+          " If zoning districts are excluded, default weights will be applied for each zoning district.");
     opt.zoningFile->guisection = _("Scenarios");
 
     opt.incentivePower = G_define_option();
@@ -625,6 +627,9 @@ int main(int argc, char **argv)
     G_option_requires(opt.outputAdaptation, opt.adaptiveCapacity, NULL);
     G_option_requires(opt.HAND, opt.HAND_percentile, NULL);
     G_option_requires(opt.floodLog, opt.floodInputFile, NULL);
+    G_option_requires_all(opt.zoning, opt.zoningFile, NULL);
+    G_option_requires_all(opt.zoningFile, opt.zoning, NULL);
+
     if (G_parser(argc, argv))
         exit(EXIT_FAILURE);
 
