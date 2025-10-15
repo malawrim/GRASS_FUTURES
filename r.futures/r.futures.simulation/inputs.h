@@ -223,8 +223,10 @@ void init_flood_segment(const struct FloodInputs *flood_inputs,
                         struct SegmentMemory segment_info);
 void update_flood_depth(int step, const struct FloodInputs *flood_inputs,
                         struct Segments *segments, map_float_t *max_flood_probability_map);
-/* function to convert zone id to weight*/
+/* initalize zone_weights to defaults*/
+void initialize_zone_weights(struct ZoneWeight *zone_weights);
+/* read zone weights from file */
+void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map, bool user_weights);
+/* convert zone id to weight*/
 int zone_to_weight(struct ZoneWeight *zone_weights, int id, float *weight, int region_idx);
-/* function to read zone weights from file */
-void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map);
 #endif // FUTURES_INPUTS_H

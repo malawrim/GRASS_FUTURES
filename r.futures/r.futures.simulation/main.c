@@ -627,7 +627,6 @@ int main(int argc, char **argv)
     G_option_requires(opt.outputAdaptation, opt.adaptiveCapacity, NULL);
     G_option_requires(opt.HAND, opt.HAND_percentile, NULL);
     G_option_requires(opt.floodLog, opt.floodInputFile, NULL);
-    G_option_requires_all(opt.zoning, opt.zoningFile, NULL);
     G_option_requires_all(opt.zoningFile, opt.zoning, NULL);
 
     if (G_parser(argc, argv))
@@ -910,10 +909,14 @@ int main(int argc, char **argv)
 
     if (opt.zoning->answer)
     {
-        zone_weights.filename = opt.zoningFile->answer;
-        zone_weights.separator = G_option_to_separator(opt.separator);
-        /* TODO change this to either allow user to introduce a zoning region map or replace ternary operator with &region_map*/
-        read_zone_file(&zone_weights, opt.potentialSubregions->answer ? &potential_region_map : &region_map);
+        if (opt.zoningFile->answer)
+        {
+            zone_weights.filename = opt.zoningFile->answer;
+            zone_weights.separator = G_option_to_separator(opt.separator);
+            read_zone_file(&zone_weights, &region_map, true);
+        }
+        /* TODO if we allow user to introduce a zoning region map, replace &region_map with opt.potentialSubregions->answer ? &potential_region_map : &region_map*/
+        read_zone_file(&zone_weights, &region_map, false);
     }
 
     /* read Patch sizes file */
