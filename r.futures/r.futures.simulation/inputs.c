@@ -1551,6 +1551,7 @@ void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map)
         zone_weights->num_regions = map_nitems(region_map);
         zone_weights->zones = (struct Zone *)G_malloc(num_zones * zone_weights->num_regions * sizeof(struct Zone));
     }
+    int zone_counter = 0;
     while (G_getl2(buf, buflen, fp))
     {
         if (buf[0] == '\0')
@@ -1587,9 +1588,10 @@ void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map)
                     G_chop(header_tokens[j]);
                     val = atof(tokens[j]);
                     zone_id = atoi(header_tokens[j]);
-                    zone_weights->zones[j + *idx].region = *idx;
-                    zone_weights->zones[j + *idx].id = zone_id;
-                    zone_weights->zones[j + *idx].weight = val;
+                    zone_weights->zones[zone_counter].region = *idx;
+                    zone_weights->zones[zone_counter].id = zone_id;
+                    zone_weights->zones[zone_counter].weight = val;
+                    zone_counter++;
                 }
             }
         }
