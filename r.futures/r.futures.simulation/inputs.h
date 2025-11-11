@@ -189,7 +189,7 @@ struct ZoneWeight
     struct Zone *zones;
     int num_zones;
     int num_regions;
-    double *intercept;
+    double *stringency;
     const char *filename;
     const char *separator;
 };

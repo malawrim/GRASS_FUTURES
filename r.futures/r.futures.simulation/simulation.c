@@ -154,12 +154,13 @@ double get_develop_probability_xy(struct Segments *segments,
     {
         Segment_get(&segments->zone, (void *)&zone, row, col);
         float weight;
+        double stringency = zone_weights->stringency[region_index];
         if (zone_to_weight(zone_weights, zone, &weight, region_index))
         {
             if (weight < 0)
-                probability *= 1 - fabs(weight);
+                probability *= 1 + weight * stringency;
             else if (weight > 0)
-                probability = probability + weight - probability * weight;
+                probability = (probability + (stringency * weight)) - (probability * (stringency * weight));
         }
         // If there is no match just keep probability unchanged and print warning
         else

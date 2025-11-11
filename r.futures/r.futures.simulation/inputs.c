@@ -1569,7 +1569,7 @@ void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map, bool
 
             int *idx;
             int region;
-            double coef_intercept;
+            double stringency;
             int j;
             double val;
             int zone_id;
@@ -1577,13 +1577,13 @@ void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map, bool
             G_chop(tokens[0]);
             region = atoi(tokens[0]);
             idx = map_get_int(region_map, region);
-            /* I think I might be able to use *idx instead of region_counter but I need to double check
-            what map_get_int returns, is it an index 0-whatever or a FIP code*/
             if (idx)
             {
                 G_chop(tokens[1]);
-                coef_intercept = atof(tokens[1]);
-                zone_weights->intercept[*idx] = coef_intercept;
+                stringency = atof(tokens[1]);
+                if (stringency == 0)
+                    G_fatal_error(_("zoning stringency cannot be set to zero. If you do not wish to assign a zone stringency set to 1"), buf);
+                zone_weights->stringency[*idx] = stringency;
 
                 /* If zones are included in file, set zones per region */
                 if (num_zones > 0)
@@ -1618,7 +1618,6 @@ int zone_to_weight(struct ZoneWeight *zone_weights, int id, float *weight, int r
 {
     int num_zones = zone_weights->num_zones;
     int num_regions = zone_weights->num_regions;
-    /* TODO haven't used the intercepts in anyway yet*/
     if (num_regions > 0)
     {
         for (int i = 0; i <= (num_zones * num_regions); i++)
