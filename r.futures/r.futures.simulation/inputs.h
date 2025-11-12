@@ -189,7 +189,8 @@ struct ZoneWeight
     struct Zone *zones;
     int num_zones;
     int num_regions;
-    double *stringency;
+    bool user_weights;
+    float *stringency;
     const char *filename;
     const char *separator;
 };
@@ -226,7 +227,7 @@ void update_flood_depth(int step, const struct FloodInputs *flood_inputs,
 /* initalize zone_weights to defaults*/
 void initialize_zone_weights(struct ZoneWeight *zone_weights);
 /* read zone weights from file */
-void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map, bool user_weights);
+void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map);
 /* convert zone id to weight*/
 int zone_to_weight(struct ZoneWeight *zone_weights, int id, float *weight, int region_idx);
 #endif // FUTURES_INPUTS_H

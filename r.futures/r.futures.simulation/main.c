@@ -179,6 +179,7 @@ int main(int argc, char **argv)
     int nseg;
     unsigned region;
     int *region_id;
+    int *region_index;
     unsigned HUC;
     int step;
     float memory;
@@ -911,12 +912,13 @@ int main(int argc, char **argv)
     {
         if (opt.zoningFile->answer)
         {
+            zone_weights.user_weights = true;
             zone_weights.filename = opt.zoningFile->answer;
             zone_weights.separator = G_option_to_separator(opt.separator);
-            read_zone_file(&zone_weights, &region_map, true);
+            read_zone_file(&zone_weights, &region_map);
         }
         /* TODO if we allow user to introduce a zoning region map, replace &region_map with opt.potentialSubregions->answer ? &potential_region_map : &region_map*/
-        read_zone_file(&zone_weights, &region_map, false);
+        read_zone_file(&zone_weights, &region_map);
     }
 
     /* read Patch sizes file */
@@ -942,6 +944,7 @@ int main(int argc, char **argv)
     overgrow = true;
     G_verbose_message("Starting simulation...");
     leaving_population = 0;
+    float stringency;
     for (step = 0; step < num_steps; step++)
     {
         recompute_probabilities(undev_cells, &segments, &potential_info, false, &zone_weights);
@@ -952,9 +955,13 @@ int main(int argc, char **argv)
         for (region = 0; region < map_nitems(&region_map); region++)
         {
             region_id = map_get_int(&reverse_region_map, region);
-            G_verbose_message("Computing step %d (out of %d), region %d (%d out of %d)",
+            region_index = map_get_int(&region_map, *region_id);
+            stringency = -1;
+            if (zone_weights.user_weights)
+                stringency = zone_weights.stringency[*region_index];
+            G_verbose_message("Computing step %d (out of %d), region %d (%d out of %d), stringency %.2f",
                               step + 1, num_steps, *region_id,
-                              region + 1, map_nitems(&region_map));
+                              region + 1, map_nitems(&region_map), stringency);
             compute_step(undev_cells, dev_cells, &demand_info, search_alg, &segments,
                          &patch_sizes, &patch_info, &devpressure_info, patch_overflow,
                          population_overflow, &redistr_matrix, step, region, &reverse_region_map, overgrow);

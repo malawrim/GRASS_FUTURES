@@ -1516,9 +1516,9 @@ void initialize_zone_weights(struct ZoneWeight *zone_weights)
     zone_weights->zones[13].weight = 0;
 }
 
-void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map, bool user_weights)
+void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map)
 {
-    if (user_weights)
+    if (zone_weights->user_weights)
     {
         FILE *fp;
         if ((fp = fopen(zone_weights->filename, "r")) == NULL)
@@ -1546,7 +1546,7 @@ void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map, bool
             G_fatal_error(_("Incorrect header in zone weights file <%s>"),
                           zone_weights->filename);
         zone_weights->num_zones = num_zones;
-        zone_weights->intercept = (double *)G_malloc(map_nitems(region_map) * sizeof(double));
+        zone_weights->stringency = (float *)G_malloc(map_nitems(region_map) * sizeof(float));
         /* If no zones are passed to file, set to default */
         if (num_zones == 0)
         {
@@ -1558,6 +1558,7 @@ void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map, bool
             zone_weights->zones = (struct Zone *)G_malloc(num_zones * zone_weights->num_regions * sizeof(struct Zone));
         }
         int zone_counter = 0;
+        int stringency_counter = 0;
         while (G_getl2(buf, buflen, fp))
         {
             if (buf[0] == '\0')
@@ -1569,7 +1570,7 @@ void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map, bool
 
             int *idx;
             int region;
-            double stringency;
+            float stringency;
             int j;
             double val;
             int zone_id;
@@ -1581,10 +1582,15 @@ void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map, bool
             {
                 G_chop(tokens[1]);
                 stringency = atof(tokens[1]);
-                if (stringency == 0)
-                    G_fatal_error(_("zoning stringency cannot be set to zero. If you do not wish to assign a zone stringency set to 1"), buf);
-                zone_weights->stringency[*idx] = stringency;
 
+                if (stringency == 0)
+                {
+                    G_fatal_error(_("zoning stringency cannot be set to zero (region %d, index %d). If you do not wish to assign a zone stringency set to 1"), region, *idx);
+                }
+                if (stringency == 1)
+                    stringency_counter++;
+                zone_weights->stringency[*idx] = stringency;
+                G_verbose_message("region %d, index %d, stringency %.2f", region, *idx, zone_weights->stringency[*idx]);
                 /* If zones are included in file, set zones per region */
                 if (num_zones > 0)
                 {
@@ -1602,9 +1608,10 @@ void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map, bool
                 }
             }
             // else ignoring the line with region which is not used
-
             G_free_tokens(tokens);
         }
+        if (stringency_counter == map_nitems(region_map))
+            zone_weights->user_weights = false;
 
         fclose(fp);
     }
