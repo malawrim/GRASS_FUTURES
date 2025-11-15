@@ -1487,31 +1487,31 @@ void initialize_zone_weights(struct ZoneWeight *zone_weights)
     zone_weights->num_regions = 0;
     zone_weights->zones = (struct Zone *)G_malloc(sizeof(struct Zone) * zone_weights->num_zones);
     zone_weights->zones[0].id = 100;
-    zone_weights->zones[0].weight = -0.1;
+    zone_weights->zones[0].weight = -0.124;
     zone_weights->zones[1].id = 101;
-    zone_weights->zones[1].weight = -0.1;
+    zone_weights->zones[1].weight = -0.124;
     zone_weights->zones[2].id = 110;
-    zone_weights->zones[2].weight = -0.43;
+    zone_weights->zones[2].weight = -0.440;
     zone_weights->zones[3].id = 120;
-    zone_weights->zones[3].weight = -0.65;
+    zone_weights->zones[3].weight = -0.656;
     zone_weights->zones[4].id = 130;
-    zone_weights->zones[4].weight = -0.77;
+    zone_weights->zones[4].weight = -0.78;
     zone_weights->zones[5].id = 131;
-    zone_weights->zones[5].weight = -0.78;
+    zone_weights->zones[5].weight = -0.79;
     zone_weights->zones[6].id = 200;
-    zone_weights->zones[6].weight = -0.13;
+    zone_weights->zones[6].weight = -0.157;
     zone_weights->zones[7].id = 201;
-    zone_weights->zones[7].weight = 0.0;
+    zone_weights->zones[7].weight = -0.026;
     zone_weights->zones[8].id = 202;
-    zone_weights->zones[8].weight = -0.1;
+    zone_weights->zones[8].weight = -0.127;
     zone_weights->zones[9].id = 203;
-    zone_weights->zones[9].weight = -0.81;
+    zone_weights->zones[9].weight = -0.817;
     zone_weights->zones[10].id = 300;
-    zone_weights->zones[10].weight = -0.08;
+    zone_weights->zones[10].weight = -0.105;
     zone_weights->zones[11].id = 301;
-    zone_weights->zones[11].weight = 1.0;
+    zone_weights->zones[11].weight = 0.115;
     zone_weights->zones[12].id = 302;
-    zone_weights->zones[12].weight = -1.0;
+    zone_weights->zones[12].weight = -1;
     zone_weights->zones[13].id = 0; // null value, no weight
     zone_weights->zones[13].weight = 0;
 }
@@ -1583,9 +1583,9 @@ void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map)
                 G_chop(tokens[1]);
                 stringency = atof(tokens[1]);
 
-                if (stringency == 0)
+                if (stringency <= 0 || stringency >= 2)
                 {
-                    G_fatal_error(_("zoning stringency cannot be set to zero (region %d, index %d). If you do not wish to assign a zone stringency set to 1"), region, *idx);
+                    G_fatal_error(_("zoning stringency must be a value between 0 and 2 not including 0 or 2 (region %d, index %d). If you do not wish to assign a zone stringency set to 1"), region, *idx);
                 }
                 if (stringency == 1)
                     stringency_counter++;
@@ -1607,6 +1607,7 @@ void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map)
                     }
                 }
             }
+
             // else ignoring the line with region which is not used
             G_free_tokens(tokens);
         }
@@ -1621,7 +1622,7 @@ void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map)
     }
 }
 
-int zone_to_weight(struct ZoneWeight *zone_weights, int id, float *weight, int region_idx)
+float zone_to_weight(struct ZoneWeight *zone_weights, int id, int region_idx)
 {
     int num_zones = zone_weights->num_zones;
     int num_regions = zone_weights->num_regions;
@@ -1631,12 +1632,9 @@ int zone_to_weight(struct ZoneWeight *zone_weights, int id, float *weight, int r
         {
             if ((zone_weights->zones[i].id == id) && (zone_weights->zones[i].region == region_idx))
             {
-                *weight = zone_weights->zones[i].weight;
-                // found
-                return 1;
+                return zone_weights->zones[i].weight;
             }
         }
-        *weight = 0;
         // not found
         return 0;
     }
@@ -1646,12 +1644,9 @@ int zone_to_weight(struct ZoneWeight *zone_weights, int id, float *weight, int r
         {
             if (zone_weights->zones[i].id == id)
             {
-                *weight = zone_weights->zones[i].weight;
-                // found
-                return 1;
+                return zone_weights->zones[i].weight;
             }
         }
-        *weight = 0;
         // not found
         return 0;
     }

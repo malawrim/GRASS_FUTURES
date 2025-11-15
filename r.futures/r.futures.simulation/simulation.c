@@ -155,13 +155,18 @@ double get_develop_probability_xy(struct Segments *segments,
         Segment_get(&segments->zone, (void *)&zone, row, col);
         float weight;
         float stringency;
-        if (zone_to_weight(zone_weights, zone, &weight, region_index))
+        weight = zone_to_weight(zone_weights, zone, region_index);
+        if (weight) // anything other than 0.0
         {
             if (zone_weights->user_weights)
             {
                 stringency = zone_weights->stringency[region_index];
                 if (stringency != 1)
                     weight *= stringency;
+                if (weight > 1)
+                    weight = 1;
+                else if (weight < -1)
+                    weight = -1;
             }
 
             if (weight < 0)
@@ -170,6 +175,7 @@ double get_develop_probability_xy(struct Segments *segments,
                 probability = (probability + weight) - (probability * weight);
         }
         // If there is no match just keep probability unchanged and print warning
+        // TODO move this check elsewhere
         else
         {
             G_warning("No match found for zoning district (%d). No weights are applied for this districts.", zone);

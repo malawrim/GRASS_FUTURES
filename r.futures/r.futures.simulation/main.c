@@ -916,9 +916,16 @@ int main(int argc, char **argv)
             zone_weights.filename = opt.zoningFile->answer;
             zone_weights.separator = G_option_to_separator(opt.separator);
             read_zone_file(&zone_weights, &region_map);
+            for (int j = 0; j < (zone_weights.num_zones * zone_weights.num_regions); j++)
+            {
+                G_verbose_message("Region %d, zone %d, weight %.3f", zone_weights.zones[j].region, zone_weights.zones[j].id, zone_weights.zones[j].weight);
+            }
+        }
+        else
+        {
+            read_zone_file(&zone_weights, &region_map);
         }
         /* TODO if we allow user to introduce a zoning region map, replace &region_map with opt.potentialSubregions->answer ? &potential_region_map : &region_map*/
-        read_zone_file(&zone_weights, &region_map);
     }
 
     /* read Patch sizes file */
