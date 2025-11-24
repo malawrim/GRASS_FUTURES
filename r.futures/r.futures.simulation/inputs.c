@@ -1559,6 +1559,7 @@ void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map)
         }
         int zone_counter = 0;
         int stringency_counter = 0;
+        int region_counter = 0;
         while (G_getl2(buf, buflen, fp))
         {
             if (buf[0] == '\0')
@@ -1580,12 +1581,13 @@ void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map)
             idx = map_get_int(region_map, region);
             if (idx)
             {
+                region_counter++;
                 G_chop(tokens[1]);
                 stringency = atof(tokens[1]);
 
                 if (stringency <= 0 || stringency >= 2)
                 {
-                    G_fatal_error(_("zoning stringency must be a value between 0 and 2 not including 0 or 2 (region %d, index %d). If you do not wish to assign a zone stringency set to 1"), region, *idx);
+                    G_fatal_error(_("Zoning stringency must be a value between 0 and 2 not including 0 or 2 (region %d, index %d). If you do not wish to assign a zone stringency set to 1"), region, *idx);
                 }
                 if (stringency == 1)
                     stringency_counter++;
@@ -1610,6 +1612,10 @@ void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map)
 
             // else ignoring the line with region which is not used
             G_free_tokens(tokens);
+        }
+        if (region_counter != map_nitems(region_map))
+        {
+            G_fatal_error(_("Incorrect number of regions provided in zoning weights file (%d, instead of %d)."), region_counter, map_nitems(region_map));
         }
         if (stringency_counter == map_nitems(region_map))
             zone_weights->user_weights = false;
