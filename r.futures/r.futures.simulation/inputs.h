@@ -175,21 +175,21 @@ struct FloodInputs
     bool depth;
 };
 
-// struct to hold single id, weight pair
+// struct to hold single id, effect pair
 struct Zone
 {
     int id;
-    float weight;
+    float effect;
     int region;
 };
 
-// dictionary-like structure for all zone id, weight pairs
-struct ZoneWeight
+// dictionary-like structure for all zone id, effect pairs
+struct ZoningEffects
 {
     struct Zone *zones;
     int num_zones;
     int num_regions;
-    bool user_weights;
+    bool user_effects;
     float *stringency;
     const char *filename;
     const char *separator;
@@ -224,10 +224,10 @@ void init_flood_segment(const struct FloodInputs *flood_inputs,
                         struct SegmentMemory segment_info);
 void update_flood_depth(int step, const struct FloodInputs *flood_inputs,
                         struct Segments *segments, map_float_t *max_flood_probability_map);
-/* initalize zone_weights to defaults*/
-void initialize_zone_weights(struct ZoneWeight *zone_weights);
-/* read zone weights from file */
-void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map);
-/* convert zone id to weight*/
-float zone_to_weight(struct ZoneWeight *zone_weights, int id, int region_idx);
+/* initalize zoning_effects to defaults*/
+void initialize_zoning_effects(struct ZoningEffects *zoning_effects);
+/* read zoning effects from file */
+void read_zoning_file(struct ZoningEffects *zoning_effects, map_int_t *region_map);
+/* convert zoning id to effect*/
+float zone_to_effect(struct ZoningEffects *zoning_effects, int id, int region_idx);
 #endif // FUTURES_INPUTS_H

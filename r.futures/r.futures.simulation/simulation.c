@@ -108,7 +108,7 @@ int get_seed(struct Developables *dev_cells, int region_idx, enum seed_search me
 double get_develop_probability_xy(struct Segments *segments,
                                   FCELL *values,
                                   struct Potential *potential_info,
-                                  int region_index, int row, int col, struct ZoneWeight *zone_weights)
+                                  int region_index, int row, int col, struct ZoningEffects *zoning_effects)
 {
     float probability;
     int transformed_idx = 0;
@@ -153,32 +153,32 @@ double get_develop_probability_xy(struct Segments *segments,
     if (segments->use_zone)
     {
         Segment_get(&segments->zone, (void *)&zone, row, col);
-        float weight;
+        float effect;
         float stringency;
-        weight = zone_to_weight(zone_weights, zone, region_index);
-        if (weight) // anything other than 0.0
+        effect = zone_to_effect(zoning_effects, zone, region_index);
+        if (effect) // anything other than 0.0
         {
-            if (zone_weights->user_weights)
+            if (zoning_effects->user_effects)
             {
-                stringency = zone_weights->stringency[region_index];
+                stringency = zoning_effects->stringency[region_index];
                 if (stringency != 1)
-                    weight *= stringency;
-                if (weight > 1)
-                    weight = 1;
-                else if (weight < -1)
-                    weight = -1;
+                    effect *= stringency;
+                if (effect > 1)
+                    effect = 1;
+                else if (effect < -1)
+                    effect = -1;
             }
 
-            if (weight < 0)
-                probability *= 1 + weight;
-            else if (weight > 0)
-                probability = (probability + weight) - (probability * weight);
+            if (effect < 0)
+                probability *= 1 + effect;
+            else if (effect > 0)
+                probability = (probability + effect) - (probability * effect);
         }
         // If there is no match just keep probability unchanged and print warning
         // TODO move this check elsewhere
         else
         {
-            G_warning("No match found for zoning district (%d). No weights are applied for this districts.", zone);
+            G_warning("No match found for zoning district (%d). No effects are applied for this districts.", zone);
         }
     }
 
@@ -199,7 +199,7 @@ double get_develop_probability_xy(struct Segments *segments,
 void recompute_probabilities(struct Developables *developable_cells,
                              struct Segments *segments,
                              struct Potential *potential_info,
-                             bool use_developed, struct ZoneWeight *zone_weights)
+                             bool use_developed, struct ZoningEffects *zoning_effects)
 {
     int row, col, cols, rows;
     int id, idx, new_size;
@@ -256,7 +256,7 @@ void recompute_probabilities(struct Developables *developable_cells,
             developable_cells->cells[region][idx].tried = 0;
             /* get probability and update undevs and segment*/
             probability = get_develop_probability_xy(segments, values,
-                                                     potential_info, region, row, col, zone_weights);
+                                                     potential_info, region, row, col, zoning_effects);
             Segment_put(&segments->probability, (void *)&probability, row, col);
             developable_cells->cells[region][idx].probability = probability;
 

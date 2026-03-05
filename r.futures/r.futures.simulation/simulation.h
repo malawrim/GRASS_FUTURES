@@ -21,10 +21,10 @@ int get_seed(struct Developables *dev_cells, int region_idx, enum seed_search me
 double get_develop_probability_xy(struct Segments *segments,
                                   FCELL *values,
                                   struct Potential *potential_info,
-                                  int region_index, int row, int col, struct ZoneWeight *zone_weights);
+                                  int region_index, int row, int col, struct ZoningEffects *zoning_effects);
 void recompute_probabilities(struct Developables *developable_cells,
                              struct Segments *segments,
-                             struct Potential *potential_info, bool use_developed, struct ZoneWeight *zone_weights);
+                             struct Potential *potential_info, bool use_developed, struct ZoningEffects *zoning_effects);
 void attempt_grow_patch(struct Developables *dev_cells,
                         enum seed_search search_alg,
                         struct Segments *segments,

@@ -1481,49 +1481,49 @@ void update_flood_depth(int step, const struct FloodInputs *flood_inputs, struct
         map_set(max_flood_probability_map, key, max_rp);
 }
 
-void initialize_zone_weights(struct ZoneWeight *zone_weights)
+void initialize_zoning_effects(struct ZoningEffects *zoning_effects)
 {
-    zone_weights->num_zones = 14;
-    zone_weights->num_regions = 0;
-    zone_weights->zones = (struct Zone *)G_malloc(sizeof(struct Zone) * zone_weights->num_zones);
-    zone_weights->zones[0].id = 100;
-    zone_weights->zones[0].weight = -0.124;
-    zone_weights->zones[1].id = 101;
-    zone_weights->zones[1].weight = -0.124;
-    zone_weights->zones[2].id = 110;
-    zone_weights->zones[2].weight = -0.440;
-    zone_weights->zones[3].id = 120;
-    zone_weights->zones[3].weight = -0.656;
-    zone_weights->zones[4].id = 130;
-    zone_weights->zones[4].weight = -0.78;
-    zone_weights->zones[5].id = 131;
-    zone_weights->zones[5].weight = -0.79;
-    zone_weights->zones[6].id = 200;
-    zone_weights->zones[6].weight = -0.157;
-    zone_weights->zones[7].id = 201;
-    zone_weights->zones[7].weight = -0.026;
-    zone_weights->zones[8].id = 202;
-    zone_weights->zones[8].weight = -0.127;
-    zone_weights->zones[9].id = 203;
-    zone_weights->zones[9].weight = -0.817;
-    zone_weights->zones[10].id = 300;
-    zone_weights->zones[10].weight = -0.105;
-    zone_weights->zones[11].id = 301;
-    zone_weights->zones[11].weight = 0.115;
-    zone_weights->zones[12].id = 302;
-    zone_weights->zones[12].weight = -1;
-    zone_weights->zones[13].id = 0; // null value, no weight
-    zone_weights->zones[13].weight = 0;
+    zoning_effects->num_zones = 14;
+    zoning_effects->num_regions = 0;
+    zoning_effects->zones = (struct Zone *)G_malloc(sizeof(struct Zone) * zoning_effects->num_zones);
+    zoning_effects->zones[0].id = 100;
+    zoning_effects->zones[0].effect = 0;
+    zoning_effects->zones[1].id = 101;
+    zoning_effects->zones[1].effect = -0.124;
+    zoning_effects->zones[2].id = 110;
+    zoning_effects->zones[2].effect = -0.440;
+    zoning_effects->zones[3].id = 120;
+    zoning_effects->zones[3].effect = -0.656;
+    zoning_effects->zones[4].id = 130;
+    zoning_effects->zones[4].effect = -0.78;
+    zoning_effects->zones[5].id = 131;
+    zoning_effects->zones[5].effect = -0.79;
+    zoning_effects->zones[6].id = 200;
+    zoning_effects->zones[6].effect = -0.157;
+    zoning_effects->zones[7].id = 201;
+    zoning_effects->zones[7].effect = -0.026;
+    zoning_effects->zones[8].id = 202;
+    zoning_effects->zones[8].effect = -0.127;
+    zoning_effects->zones[9].id = 203;
+    zoning_effects->zones[9].effect = -0.817;
+    zoning_effects->zones[10].id = 300;
+    zoning_effects->zones[10].effect = -0.105;
+    zoning_effects->zones[11].id = 301;
+    zoning_effects->zones[11].effect = 0.115;
+    zoning_effects->zones[12].id = 302;
+    zoning_effects->zones[12].effect = -1;
+    zoning_effects->zones[13].id = 0; // null value, no effect
+    zoning_effects->zones[13].effect = 0;
 }
 
-void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map)
+void read_zoning_file(struct ZoningEffects *zoning_effects, map_int_t *region_map)
 {
-    if (zone_weights->user_weights)
+    if (zoning_effects->user_effects)
     {
         FILE *fp;
-        if ((fp = fopen(zone_weights->filename, "r")) == NULL)
-            G_fatal_error(_("Cannot open zone weights file <%s>"),
-                          zone_weights->filename);
+        if ((fp = fopen(zoning_effects->filename, "r")) == NULL)
+            G_fatal_error(_("Cannot open zone effects file <%s>"),
+                          zoning_effects->filename);
 
         const char *td = "\"";
         char **tokens;
@@ -1534,28 +1534,28 @@ void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map)
         size_t buflen = 4000;
         char buf[buflen];
         if (G_getl2(buf, buflen, fp) == 0)
-            G_fatal_error(_("Zone weights file <%s>"
+            G_fatal_error(_("Zone effects file <%s>"
                             " contains less than one line"),
-                          zone_weights->filename);
-        header_tokens = G_tokenize2(buf, zone_weights->separator, td);
+                          zoning_effects->filename);
+        header_tokens = G_tokenize2(buf, zoning_effects->separator, td);
         header_ntokens = G_number_of_tokens(header_tokens);
         /* number of zones is number of headers minus 2 (region ID and intercept)*/
         int num_zones = header_ntokens - 2;
         /* TODO could add a check here against the number of unique zones in zoning file*/
         if (header_ntokens < 2)
-            G_fatal_error(_("Incorrect header in zone weights file <%s>"),
-                          zone_weights->filename);
-        zone_weights->num_zones = num_zones;
-        zone_weights->stringency = (float *)G_malloc(map_nitems(region_map) * sizeof(float));
+            G_fatal_error(_("Incorrect header in zone effects file <%s>"),
+                          zoning_effects->filename);
+        zoning_effects->num_zones = num_zones;
+        zoning_effects->stringency = (float *)G_malloc(map_nitems(region_map) * sizeof(float));
         /* If no zones are passed to file, set to default */
         if (num_zones == 0)
         {
-            initialize_zone_weights(zone_weights);
+            initialize_zoning_effects(zoning_effects);
         }
         else
         {
-            zone_weights->num_regions = map_nitems(region_map);
-            zone_weights->zones = (struct Zone *)G_malloc(num_zones * zone_weights->num_regions * sizeof(struct Zone));
+            zoning_effects->num_regions = map_nitems(region_map);
+            zoning_effects->zones = (struct Zone *)G_malloc(num_zones * zoning_effects->num_regions * sizeof(struct Zone));
         }
         int zone_counter = 0;
         int stringency_counter = 0;
@@ -1564,10 +1564,10 @@ void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map)
         {
             if (buf[0] == '\0')
                 continue;
-            tokens = G_tokenize2(buf, zone_weights->separator, td);
+            tokens = G_tokenize2(buf, zoning_effects->separator, td);
             ntokens = G_number_of_tokens(tokens);
             if (ntokens < 2)
-                G_fatal_error(_("Wrong number of columns (%s) in zone weights file, should be at least 2"), buf);
+                G_fatal_error(_("Wrong number of columns (%s) in zone effects file, should be at least 2"), buf);
 
             int *idx;
             int region;
@@ -1591,8 +1591,8 @@ void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map)
                 }
                 if (stringency == 1)
                     stringency_counter++;
-                zone_weights->stringency[*idx] = stringency;
-                G_verbose_message("region %d, index %d, stringency %.2f", region, *idx, zone_weights->stringency[*idx]);
+                zoning_effects->stringency[*idx] = stringency;
+                G_verbose_message("region %d, index %d, stringency %.2f", region, *idx, zoning_effects->stringency[*idx]);
                 /* If zones are included in file, set zones per region */
                 if (num_zones > 0)
                 {
@@ -1602,9 +1602,9 @@ void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map)
                         G_chop(header_tokens[j]);
                         val = atof(tokens[j]);
                         zone_id = atoi(header_tokens[j]);
-                        zone_weights->zones[zone_counter].region = *idx;
-                        zone_weights->zones[zone_counter].id = zone_id;
-                        zone_weights->zones[zone_counter].weight = val;
+                        zoning_effects->zones[zone_counter].region = *idx;
+                        zoning_effects->zones[zone_counter].id = zone_id;
+                        zoning_effects->zones[zone_counter].effect = val;
                         zone_counter++;
                     }
                 }
@@ -1615,30 +1615,30 @@ void read_zone_file(struct ZoneWeight *zone_weights, map_int_t *region_map)
         }
         if (region_counter != map_nitems(region_map))
         {
-            G_fatal_error(_("Incorrect number of regions provided in zoning weights file (%d, instead of %d)."), region_counter, map_nitems(region_map));
+            G_fatal_error(_("Incorrect number of regions provided in zoning effects file (%d, instead of %d)."), region_counter, map_nitems(region_map));
         }
         if (stringency_counter == map_nitems(region_map))
-            zone_weights->user_weights = false;
+            zoning_effects->user_effects = false;
 
         fclose(fp);
     }
     else
     {
-        initialize_zone_weights(zone_weights);
+        initialize_zoning_effects(zoning_effects);
     }
 }
 
-float zone_to_weight(struct ZoneWeight *zone_weights, int id, int region_idx)
+float zone_to_effect(struct ZoningEffects *zoning_effects, int id, int region_idx)
 {
-    int num_zones = zone_weights->num_zones;
-    int num_regions = zone_weights->num_regions;
+    int num_zones = zoning_effects->num_zones;
+    int num_regions = zoning_effects->num_regions;
     if (num_regions > 0)
     {
         for (int i = 0; i <= (num_zones * num_regions); i++)
         {
-            if ((zone_weights->zones[i].id == id) && (zone_weights->zones[i].region == region_idx))
+            if ((zoning_effects->zones[i].id == id) && (zoning_effects->zones[i].region == region_idx))
             {
-                return zone_weights->zones[i].weight;
+                return zoning_effects->zones[i].effect;
             }
         }
         // not found
@@ -1648,9 +1648,9 @@ float zone_to_weight(struct ZoneWeight *zone_weights, int id, int region_idx)
     {
         for (int i = 0; i <= num_zones; i++)
         {
-            if (zone_weights->zones[i].id == id)
+            if (zoning_effects->zones[i].id == id)
             {
-                return zone_weights->zones[i].weight;
+                return zoning_effects->zones[i].effect;
             }
         }
         // not found

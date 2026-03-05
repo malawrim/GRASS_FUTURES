@@ -218,7 +218,7 @@ int main(int argc, char **argv)
     float leaving_population;
     bool overgrow;
     size_t undev_estimate;
-    struct ZoneWeight zone_weights;
+    struct ZoningEffects zoning_effects;
 
     G_gisinit(argv[0]);
 
@@ -554,26 +554,25 @@ int main(int argc, char **argv)
           "probability and positive increases probability.");
     opt.potentialWeight->guisection = _("Scenarios");
 
-    /* TODO how do I link the zoning and zoningFile parameters? If one is provided we need the other*/
     opt.zoning = G_define_standard_option(G_OPT_R_INPUT);
     opt.zoning->key = "zoning";
     opt.zoning->required = NO;
     opt.zoning->label =
         _("Raster map of zoning districts used to alter development potential");
     opt.zoning->description =
-        _("Values indicating zoning district. Values should either relate to what is included in zoning_weights file"
-          " or should be values from 100-302 to align with default zoning districts (see documentation for more details.)");
+        _("Values indicating zoning district. Values should either relate to what is included in zoning_effects file"
+          " or should be values from 100-302 to align with predefined zoning districts (see documentation for more details.)");
     opt.zoning->guisection = _("Scenarios");
 
     opt.zoningFile = G_define_standard_option(G_OPT_F_INPUT);
-    opt.zoningFile->key = "zoning_weights";
+    opt.zoningFile->key = "zoning_effects";
     opt.zoningFile->required = NO;
     opt.zoningFile->label =
-        _("CSV file with zonings weights per region");
+        _("CSV file with zoning effects per region");
     opt.zoningFile->description =
         _("Each line should contain region ID followed"
-          " by an intercept indicating weight per region and weights for each unique zoning district."
-          " If zoning districts are excluded, default weights will be applied for each zoning district.");
+          " by an intercept indicating weight per region and effects for each unique zoning district."
+          " If zoning districts are excluded, predefined effects will be applied for each zoning district.");
     opt.zoningFile->guisection = _("Scenarios");
 
     opt.incentivePower = G_define_option();
@@ -912,18 +911,18 @@ int main(int argc, char **argv)
     {
         if (opt.zoningFile->answer)
         {
-            zone_weights.user_weights = true;
-            zone_weights.filename = opt.zoningFile->answer;
-            zone_weights.separator = G_option_to_separator(opt.separator);
-            read_zone_file(&zone_weights, &region_map);
-            for (int j = 0; j < (zone_weights.num_zones * zone_weights.num_regions); j++)
+            zoning_effects.user_effects = true;
+            zoning_effects.filename = opt.zoningFile->answer;
+            zoning_effects.separator = G_option_to_separator(opt.separator);
+            read_zoning_file(&zoning_effects, &region_map);
+            for (int j = 0; j < (zoning_effects.num_zones * zoning_effects.num_regions); j++)
             {
-                G_verbose_message("Region %d, zone %d, weight %.3f", zone_weights.zones[j].region, zone_weights.zones[j].id, zone_weights.zones[j].weight);
+                G_verbose_message("Region %d, zone %d, effect %.3f", zoning_effects.zones[j].region, zoning_effects.zones[j].id, zoning_effects.zones[j].effect);
             }
         }
         else
         {
-            read_zone_file(&zone_weights, &region_map);
+            read_zoning_file(&zoning_effects, &region_map);
         }
         /* TODO if we allow user to introduce a zoning region map, replace &region_map with opt.potentialSubregions->answer ? &potential_region_map : &region_map*/
     }
@@ -954,9 +953,9 @@ int main(int argc, char **argv)
     float stringency;
     for (step = 0; step < num_steps; step++)
     {
-        recompute_probabilities(undev_cells, &segments, &potential_info, false, &zone_weights);
+        recompute_probabilities(undev_cells, &segments, &potential_info, false, &zoning_effects);
         if (segments.use_density)
-            recompute_probabilities(dev_cells, &segments, &redev_potential_info, true, &zone_weights);
+            recompute_probabilities(dev_cells, &segments, &redev_potential_info, true, &zoning_effects);
         if (step == num_steps - 1)
             overgrow = false;
         for (region = 0; region < map_nitems(&region_map); region++)
@@ -964,8 +963,8 @@ int main(int argc, char **argv)
             region_id = map_get_int(&reverse_region_map, region);
             region_index = map_get_int(&region_map, *region_id);
             stringency = -1;
-            if (zone_weights.user_weights)
-                stringency = zone_weights.stringency[*region_index];
+            if (zoning_effects.user_effects)
+                stringency = zoning_effects.stringency[*region_index];
             G_verbose_message("Computing step %d (out of %d), region %d (%d out of %d), stringency %.2f",
                               step + 1, num_steps, *region_id,
                               region + 1, map_nitems(&region_map), stringency);
