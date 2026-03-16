@@ -5,15 +5,15 @@
 #include <grass/segment.h>
 
 #include "map.h"
-enum development_type {DEV_TYPE_INITIAL = 0,
-                       DEV_TYPE_UNDEVELOPED = -1};
+enum development_type { DEV_TYPE_INITIAL = 0, DEV_TYPE_UNDEVELOPED = -1 };
 
-enum DDF_subregions_source {DDF_DEFAULT = 0,
-                            DDF_POTENTIAL = -1,
-                            DDF_CUSTOM = -2,
-                            DDF_NONE = -3};
-struct Demand
-{
+enum DDF_subregions_source {
+    DDF_DEFAULT = 0,
+    DDF_POTENTIAL = -1,
+    DDF_CUSTOM = -2,
+    DDF_NONE = -3
+};
+struct Demand {
     const char *cells_filename;
     const char *population_filename;
     float **cells_table;
@@ -25,8 +25,7 @@ struct Demand
     bool has_population;
 };
 
-struct Potential
-{
+struct Potential {
     const char *filename;
     double **predictors;
     double *intercept;
@@ -39,8 +38,7 @@ struct Potential
     const char *separator;
 };
 
-struct PatchSizes
-{
+struct PatchSizes {
     const char *filename;
     // array of patches
     int **patch_sizes;
@@ -50,11 +48,9 @@ struct PatchSizes
     int max_patch_size;
     // use single column for all regions
     bool single_column;
-
 };
 
-struct DepthDamageFunctions
-{
+struct DepthDamageFunctions {
     const char *filename;
     double **damage;
     double *levels;
@@ -65,15 +61,13 @@ struct DepthDamageFunctions
     enum DDF_subregions_source subregions_source;
 };
 
-struct SegmentMemory
-{
+struct SegmentMemory {
     int rows;
     int cols;
     int in_memory;
 };
 
-struct Segments
-{
+struct Segments {
     SEGMENT developed;
     SEGMENT subregions;
     SEGMENT potential_subregions;
@@ -96,8 +90,7 @@ struct Segments
     bool use_climate;
 };
 
-struct RasterInputs
-{
+struct RasterInputs {
     const char *developed;
     const char *regions;
     const char *potential_regions;
@@ -113,9 +106,7 @@ struct RasterInputs
     const char *DDF_regions;
 };
 
-
-struct DevelopableCell
-{
+struct DevelopableCell {
 
     size_t id;
     float probability;
@@ -123,39 +114,34 @@ struct DevelopableCell
     bool tried;
 };
 
-struct Developables
-{
+struct Developables {
     int max_subregions;
     size_t *max;
     size_t *num;
     struct DevelopableCell **cells;
 };
 
-struct BBox
-{
+struct BBox {
     int n;
     int s;
     int e;
     int w;
 };
 
-struct BBoxes
-{
+struct BBoxes {
     int n_bbox;
     int max_bbox;
     map_int_t map;
     struct BBox *bbox;
 };
 
-struct FloodInput
-{
+struct FloodInput {
     int step;
     float return_period;
     const char *map;
 };
 
-struct FloodInputs
-{
+struct FloodInputs {
     const char *filename;
     const char *separator;
     struct FloodInput *array;
@@ -171,30 +157,32 @@ int get_developed_val_from_step(int step, bool abandon);
 size_t estimate_undev_size(struct RasterInputs inputs);
 void initialize_incentive(struct Potential *potential_info, float exponent);
 void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
-                        struct SegmentMemory segment_info, map_int_t *region_map,
-                        map_int_t *reverse_region_map,
-                        map_int_t *potential_region_map,
-                        map_int_t *HUC_map, map_float_t *max_flood_probability_map,
+                        struct SegmentMemory segment_info,
+                        map_int_t *region_map, map_int_t *reverse_region_map,
+                        map_int_t *potential_region_map, map_int_t *HUC_map,
+                        map_float_t *max_flood_probability_map,
                         map_int_t *DDF_region_map);
 void read_predictors(struct RasterInputs inputs, struct Segments *segments,
                      const struct Potential *potential,
                      const struct SegmentMemory segment_info);
 void read_demand_file(struct Demand *demandInfo, map_int_t *region_map);
-void fill_predictor_map(struct RasterInputs inputs, map_int_t *predictor_map, int num_predictors);
+void fill_predictor_map(struct RasterInputs inputs, map_int_t *predictor_map,
+                        int num_predictors);
 void read_potential_file(struct Potential *potentialInfo, map_int_t *region_map,
                          map_int_t *predictor_map);
 void read_patch_sizes(struct PatchSizes *patch_sizes, map_int_t *region_map,
                       double discount_factor);
-void read_DDF_file(struct DepthDamageFunctions *ddf,
-                   map_int_t *DDF_region_map);
+void read_DDF_file(struct DepthDamageFunctions *ddf, map_int_t *DDF_region_map);
 void create_bboxes(SEGMENT *raster, SEGMENT *masking, struct BBoxes *bboxes);
-void update_flood_probability(int step, const struct FloodInputs *flood_inputs, struct Segments *segments,
-                              map_int_t *HUC_map, map_float_t *max_flood_probability_map);
+void update_flood_probability(int step, const struct FloodInputs *flood_inputs,
+                              struct Segments *segments, map_int_t *HUC_map,
+                              map_float_t *max_flood_probability_map);
 void read_flood_file(struct FloodInputs *flood_inputs);
 void init_flood_segment(const struct FloodInputs *flood_inputs,
                         struct Segments *segments,
                         struct SegmentMemory segment_info);
 void update_flood_depth(int step, const struct FloodInputs *flood_inputs,
-                        struct Segments *segments, map_float_t *max_flood_probability_map);
+                        struct Segments *segments,
+                        map_float_t *max_flood_probability_map);
 
 #endif // FUTURES_INPUTS_H

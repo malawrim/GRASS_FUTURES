@@ -30,7 +30,7 @@
  * whether abandonment is being tracked
  * \param step
  * \param abandon
- * \return 
+ * \return
  */
 int get_developed_val_from_step(int step, bool abandon)
 {
@@ -63,8 +63,8 @@ size_t estimate_undev_size(struct RasterInputs inputs)
     while (row < rows) {
         Rast_get_row(fd_developed, developed_row, row, CELL_TYPE);
         for (col = 0; col < cols; col++) {
-            if (!Rast_is_null_value(&((CELL *) developed_row)[col], CELL_TYPE)) {
-                if (((CELL *) developed_row)[col] == 0)
+            if (!Rast_is_null_value(&((CELL *)developed_row)[col], CELL_TYPE)) {
+                if (((CELL *)developed_row)[col] == 0)
                     undeveloped++;
             }
         }
@@ -85,8 +85,8 @@ void initialize_incentive(struct Potential *potential_info, float exponent)
     int i;
 
     potential_info->incentive_transform_size = 1001;
-    potential_info->incentive_transform = (float *) G_malloc(sizeof(float) *
-                                                             potential_info->incentive_transform_size);
+    potential_info->incentive_transform = (float *)G_malloc(
+        sizeof(float) * potential_info->incentive_transform_size);
     i = 0;
     double step = 1. / (potential_info->incentive_transform_size - 1);
     while (i < potential_info->incentive_transform_size) {
@@ -103,18 +103,17 @@ void initialize_incentive(struct Potential *potential_info, float exponent)
  * \param region_map
  */
 void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
-                        struct SegmentMemory segment_info, map_int_t *region_map,
-                        map_int_t *reverse_region_map,
-                        map_int_t *potential_region_map,
-                        map_int_t *HUC_map, map_float_t *max_flood_probability_map,
+                        struct SegmentMemory segment_info,
+                        map_int_t *region_map, map_int_t *reverse_region_map,
+                        map_int_t *potential_region_map, map_int_t *HUC_map,
+                        map_float_t *max_flood_probability_map,
                         map_int_t *DDF_region_map)
 {
     int row, col;
     int rows, cols;
     int fd_developed = 0, fd_reg = 0, fd_devpressure = 0, fd_weights = 0,
-            fd_pot_reg = 0, fd_density = 0, fd_density_cap = 0,
-            fd_HAND = 0, fd_adaptive_capacity = 0,
-            fd_HUC = 0, fd_DDF = 0, fd_adaptations = 0;
+        fd_pot_reg = 0, fd_density = 0, fd_density_cap = 0, fd_HAND = 0,
+        fd_adaptive_capacity = 0, fd_HUC = 0, fd_DDF = 0, fd_adaptations = 0;
     int count_regions, pot_count_regions, HUC_count, DDF_count;
     int region_index, pot_region_index, HUC_index, DDF_index;
     int *region_pindex;
@@ -135,7 +134,6 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
     CELL *DDF_row = NULL;
     CELL *adaptation_row = NULL;
     float *pvalue;
-
 
     rows = Rast_window_rows();
     cols = Rast_window_cols();
@@ -167,67 +165,88 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
     }
 
     /* Segment open developed */
-    if (Segment_open(&segments->developed, G_tempfile(), rows,
-                     cols, segment_info.rows, segment_info.cols,
+    if (Segment_open(&segments->developed, G_tempfile(), rows, cols,
+                     segment_info.rows, segment_info.cols,
                      Rast_cell_size(CELL_TYPE), segment_info.in_memory) != 1)
-        G_fatal_error(_("Cannot create temporary file with segments of a raster map of development"));
+        G_fatal_error(_("Cannot create temporary file with segments of a "
+                        "raster map of development"));
     /* Segment open subregions */
-    if (Segment_open(&segments->subregions, G_tempfile(), rows,
-                     cols, segment_info.rows, segment_info.cols,
+    if (Segment_open(&segments->subregions, G_tempfile(), rows, cols,
+                     segment_info.rows, segment_info.cols,
                      Rast_cell_size(CELL_TYPE), segment_info.in_memory) != 1)
-        G_fatal_error(_("Cannot create temporary file with segments of a raster map of subregions"));
+        G_fatal_error(_("Cannot create temporary file with segments of a "
+                        "raster map of subregions"));
     /* Segment open development pressure */
-    if (Segment_open(&segments->devpressure, G_tempfile(), rows,
-                     cols, segment_info.rows, segment_info.cols,
+    if (Segment_open(&segments->devpressure, G_tempfile(), rows, cols,
+                     segment_info.rows, segment_info.cols,
                      Rast_cell_size(FCELL_TYPE), segment_info.in_memory) != 1)
-        G_fatal_error(_("Cannot create temporary file with segments of a raster map of development pressure"));
+        G_fatal_error(_("Cannot create temporary file with segments of a "
+                        "raster map of development pressure"));
     /* Segment open weights */
     if (segments->use_weight)
-        if (Segment_open(&segments->weight, G_tempfile(), rows,
-                         cols, segment_info.rows, segment_info.cols,
-                         Rast_cell_size(FCELL_TYPE), segment_info.in_memory) != 1)
-            G_fatal_error(_("Cannot create temporary file with segments of a raster map of weights"));
+        if (Segment_open(&segments->weight, G_tempfile(), rows, cols,
+                         segment_info.rows, segment_info.cols,
+                         Rast_cell_size(FCELL_TYPE),
+                         segment_info.in_memory) != 1)
+            G_fatal_error(_("Cannot create temporary file with segments of a "
+                            "raster map of weights"));
     /* Segment open potential_subregions */
     if (segments->use_potential_subregions)
         if (Segment_open(&segments->potential_subregions, G_tempfile(), rows,
                          cols, segment_info.rows, segment_info.cols,
-                         Rast_cell_size(CELL_TYPE), segment_info.in_memory) != 1)
-            G_fatal_error(_("Cannot create temporary file with segments of a raster map of weights"));
+                         Rast_cell_size(CELL_TYPE),
+                         segment_info.in_memory) != 1)
+            G_fatal_error(_("Cannot create temporary file with segments of a "
+                            "raster map of weights"));
     /* Segment open density */
     if (segments->use_density) {
-        if (Segment_open(&segments->density, G_tempfile(), rows,
-                         cols, segment_info.rows, segment_info.cols,
-                         Rast_cell_size(FCELL_TYPE), segment_info.in_memory) != 1)
-            G_fatal_error(_("Cannot create temporary file with segments of a raster map of density"));
-        if (Segment_open(&segments->density_capacity, G_tempfile(), rows,
-                         cols, segment_info.rows, segment_info.cols,
-                         Rast_cell_size(FCELL_TYPE), segment_info.in_memory) != 1)
-            G_fatal_error(_("Cannot create temporary file with segments of a raster map of density capacity"));
+        if (Segment_open(&segments->density, G_tempfile(), rows, cols,
+                         segment_info.rows, segment_info.cols,
+                         Rast_cell_size(FCELL_TYPE),
+                         segment_info.in_memory) != 1)
+            G_fatal_error(_("Cannot create temporary file with segments of a "
+                            "raster map of density"));
+        if (Segment_open(&segments->density_capacity, G_tempfile(), rows, cols,
+                         segment_info.rows, segment_info.cols,
+                         Rast_cell_size(FCELL_TYPE),
+                         segment_info.in_memory) != 1)
+            G_fatal_error(_("Cannot create temporary file with segments of a "
+                            "raster map of density capacity"));
     }
     /* Segment open HAND */
     if (segments->use_climate) {
         if (inputs.HAND)
-            if (Segment_open(&segments->HAND, G_tempfile(), rows,
-                             cols, segment_info.rows, segment_info.cols,
-                             Rast_cell_size(FCELL_TYPE), segment_info.in_memory) != 1)
-                G_fatal_error(_("Cannot create temporary file with segments of a raster map of HAND"));
-        if (Segment_open(&segments->adaptive_capacity, G_tempfile(), rows,
-                         cols, segment_info.rows, segment_info.cols,
-                         Rast_cell_size(FCELL_TYPE), segment_info.in_memory) != 1)
-            G_fatal_error(_("Cannot create temporary file with segments of a raster map of adaptive capacity"));
-        if (Segment_open(&segments->HUC, G_tempfile(), rows,
-                         cols, segment_info.rows, segment_info.cols,
-                         Rast_cell_size(CELL_TYPE), segment_info.in_memory) != 1)
-            G_fatal_error(_("Cannot create temporary file with segments of a raster map of HUCs"));
+            if (Segment_open(&segments->HAND, G_tempfile(), rows, cols,
+                             segment_info.rows, segment_info.cols,
+                             Rast_cell_size(FCELL_TYPE),
+                             segment_info.in_memory) != 1)
+                G_fatal_error(_("Cannot create temporary file with segments of "
+                                "a raster map of HAND"));
+        if (Segment_open(&segments->adaptive_capacity, G_tempfile(), rows, cols,
+                         segment_info.rows, segment_info.cols,
+                         Rast_cell_size(FCELL_TYPE),
+                         segment_info.in_memory) != 1)
+            G_fatal_error(_("Cannot create temporary file with segments of a "
+                            "raster map of adaptive capacity"));
+        if (Segment_open(&segments->HUC, G_tempfile(), rows, cols,
+                         segment_info.rows, segment_info.cols,
+                         Rast_cell_size(CELL_TYPE),
+                         segment_info.in_memory) != 1)
+            G_fatal_error(_("Cannot create temporary file with segments of a "
+                            "raster map of HUCs"));
         if (inputs.DDF_regions)
             if (Segment_open(&segments->DDF_subregions, G_tempfile(), rows,
                              cols, segment_info.rows, segment_info.cols,
-                             Rast_cell_size(CELL_TYPE), segment_info.in_memory) != 1)
-                G_fatal_error(_("Cannot create temporary file with segments of a raster map of DDF subregions"));
-        if (Segment_open(&segments->adaptation, G_tempfile(), rows,
-                         cols, segment_info.rows, segment_info.cols,
-                         Rast_cell_size(CELL_TYPE), segment_info.in_memory) != 1)
-            G_fatal_error(_("Cannot create temporary file with segments of an adaptations raster map"));
+                             Rast_cell_size(CELL_TYPE),
+                             segment_info.in_memory) != 1)
+                G_fatal_error(_("Cannot create temporary file with segments of "
+                                "a raster map of DDF subregions"));
+        if (Segment_open(&segments->adaptation, G_tempfile(), rows, cols,
+                         segment_info.rows, segment_info.cols,
+                         Rast_cell_size(CELL_TYPE),
+                         segment_info.in_memory) != 1)
+            G_fatal_error(_("Cannot create temporary file with segments of an "
+                            "adaptations raster map"));
     }
     developed_row = Rast_allocate_buf(CELL_TYPE);
     subregions_row = Rast_allocate_buf(CELL_TYPE);
@@ -267,7 +286,8 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
         if (segments->use_climate) {
             if (inputs.HAND)
                 Rast_get_row(fd_HAND, HAND_row, row, FCELL_TYPE);
-            Rast_get_row(fd_adaptive_capacity, adaptive_capacity_row, row, FCELL_TYPE);
+            Rast_get_row(fd_adaptive_capacity, adaptive_capacity_row, row,
+                         FCELL_TYPE);
             Rast_get_row(fd_HUC, HUC_row, row, CELL_TYPE);
             if (inputs.DDF_regions)
                 Rast_get_row(fd_DDF, DDF_row, row, CELL_TYPE);
@@ -276,15 +296,16 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
             isnull = false;
             /* developed */
             /* undeveloped 0 -> -1, developed 1 -> 0 */
-            if (!Rast_is_null_value(&((CELL *) developed_row)[col], CELL_TYPE)) {
-                c = ((CELL *) developed_row)[col];
-                ((CELL *) developed_row)[col] = c - 1;
+            if (!Rast_is_null_value(&((CELL *)developed_row)[col], CELL_TYPE)) {
+                c = ((CELL *)developed_row)[col];
+                ((CELL *)developed_row)[col] = c - 1;
             }
             else
                 isnull = true;
             /* subregions */
-            if (!Rast_is_null_value(&((CELL *) subregions_row)[col], CELL_TYPE)) {
-                c = ((CELL *) subregions_row)[col];
+            if (!Rast_is_null_value(&((CELL *)subregions_row)[col],
+                                    CELL_TYPE)) {
+                c = ((CELL *)subregions_row)[col];
                 region_pindex = map_get_int(region_map, c);
                 if (!region_pindex) {
                     map_set_int(region_map, c, count_regions);
@@ -294,13 +315,14 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
                 }
                 else
                     region_index = *region_pindex;
-                ((CELL *) subregions_row)[col] = region_index;
+                ((CELL *)subregions_row)[col] = region_index;
             }
             else
                 isnull = true;
             if (segments->use_potential_subregions) {
-                if (!Rast_is_null_value(&((CELL *) pot_subregions_row)[col], CELL_TYPE)) {
-                    c = ((CELL *) pot_subregions_row)[col];
+                if (!Rast_is_null_value(&((CELL *)pot_subregions_row)[col],
+                                        CELL_TYPE)) {
+                    c = ((CELL *)pot_subregions_row)[col];
                     pot_region_pindex = map_get_int(potential_region_map, c);
                     if (!pot_region_pindex) {
                         map_set_int(potential_region_map, c, pot_count_regions);
@@ -309,50 +331,58 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
                     }
                     else
                         pot_region_index = *pot_region_pindex;
-                    ((CELL *) pot_subregions_row)[col] = pot_region_index;
+                    ((CELL *)pot_subregions_row)[col] = pot_region_index;
                 }
                 else
                     isnull = true;
             }
             /* devpressure - just check nulls */
-            if (Rast_is_null_value(&((FCELL *) devpressure_row)[col], FCELL_TYPE))
+            if (Rast_is_null_value(&((FCELL *)devpressure_row)[col],
+                                   FCELL_TYPE))
                 isnull = true;
             /* density - just check nulls */
             if (segments->use_density) {
-                if (Rast_is_null_value(&((FCELL *) density_row)[col], FCELL_TYPE))
+                if (Rast_is_null_value(&((FCELL *)density_row)[col],
+                                       FCELL_TYPE))
                     isnull = true;
-                if (Rast_is_null_value(&((FCELL *) density_capacity_row)[col], FCELL_TYPE))
+                if (Rast_is_null_value(&((FCELL *)density_capacity_row)[col],
+                                       FCELL_TYPE))
                     isnull = true;
             }
             /* weights - must be in range -1, 1*/
             if (segments->use_weight) {
-                if (Rast_is_null_value(&((FCELL *) weights_row)[col], FCELL_TYPE)) {
-                    ((FCELL *) weights_row)[col] = 0;
+                if (Rast_is_null_value(&((FCELL *)weights_row)[col],
+                                       FCELL_TYPE)) {
+                    ((FCELL *)weights_row)[col] = 0;
                     isnull = true;
                 }
                 else {
-                    fc = ((FCELL *) weights_row)[col];
+                    fc = ((FCELL *)weights_row)[col];
                     if (fc > 1) {
-                        G_warning(_("Probability weights are > 1, truncating..."));
+                        G_warning(
+                            _("Probability weights are > 1, truncating..."));
                         fc = 1;
                     }
                     else if (fc < -1) {
                         fc = -1;
-                        G_warning(_("Probability weights are < -1, truncating..."));
+                        G_warning(
+                            _("Probability weights are < -1, truncating..."));
                     }
-                    ((FCELL *) weights_row)[col] = fc;
+                    ((FCELL *)weights_row)[col] = fc;
                 }
             }
             /* flooding; run only for cells which will be part of simulation
                to avoid collecting unused hucs/ddfs */
             if (segments->use_climate && !isnull) {
                 if (inputs.HAND)
-                    if (Rast_is_null_value(&((FCELL *) HAND_row)[col], FCELL_TYPE))
+                    if (Rast_is_null_value(&((FCELL *)HAND_row)[col],
+                                           FCELL_TYPE))
                         isnull = true;
-                if (Rast_is_null_value(&((FCELL *) adaptive_capacity_row)[col], FCELL_TYPE))
+                if (Rast_is_null_value(&((FCELL *)adaptive_capacity_row)[col],
+                                       FCELL_TYPE))
                     isnull = true;
-                if (!Rast_is_null_value(&((CELL *) HUC_row)[col], CELL_TYPE)) {
-                    c = ((CELL *) HUC_row)[col];
+                if (!Rast_is_null_value(&((CELL *)HUC_row)[col], CELL_TYPE)) {
+                    c = ((CELL *)HUC_row)[col];
                     /* mapping: HUC id -> index */
                     pindex = map_get_int(HUC_map, c);
                     if (!pindex) {
@@ -362,7 +392,7 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
                     }
                     else
                         HUC_index = *pindex;
-                    ((CELL *) HUC_row)[col] = HUC_index;
+                    ((CELL *)HUC_row)[col] = HUC_index;
                     /* init max flood value for each HUC */
                     pvalue = map_get_int(max_flood_probability_map, HUC_index);
                     if (!pvalue)
@@ -370,17 +400,18 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
                 }
                 /* DDF subregions */
                 if (inputs.DDF_regions) {
-                    if (!Rast_is_null_value(&((CELL *) DDF_row)[col], CELL_TYPE)) {
-                        c = ((CELL *) DDF_row)[col];
+                    if (!Rast_is_null_value(&((CELL *)DDF_row)[col],
+                                            CELL_TYPE)) {
+                        c = ((CELL *)DDF_row)[col];
                         pindex = map_get_int(DDF_region_map, c);
-                        if(!pindex) {
+                        if (!pindex) {
                             map_set_int(DDF_region_map, c, DDF_count);
                             DDF_index = DDF_count;
                             DDF_count++;
                         }
                         else
                             DDF_index = *pindex;
-                        ((CELL *) DDF_row)[col] = DDF_index;
+                        ((CELL *)DDF_row)[col] = DDF_index;
                     }
                     else
                         isnull = true;
@@ -389,7 +420,7 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
             /* if in developed, subregions, devpressure or weights are any nulls
                propagate them into developed */
             if (isnull)
-                Rast_set_c_null_value(&((CELL *) developed_row)[col], 1);
+                Rast_set_c_null_value(&((CELL *)developed_row)[col], 1);
         }
         if (segments->use_climate)
             if (inputs.adaptation)
@@ -401,15 +432,18 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
         if (segments->use_weight)
             Segment_put_row(&segments->weight, weights_row, row);
         if (segments->use_potential_subregions)
-            Segment_put_row(&segments->potential_subregions, pot_subregions_row, row);
+            Segment_put_row(&segments->potential_subregions, pot_subregions_row,
+                            row);
         if (segments->use_density) {
             Segment_put_row(&segments->density, density_row, row);
-            Segment_put_row(&segments->density_capacity, density_capacity_row, row);
+            Segment_put_row(&segments->density_capacity, density_capacity_row,
+                            row);
         }
         if (segments->use_climate) {
             if (inputs.HAND)
                 Segment_put_row(&segments->HAND, HAND_row, row);
-            Segment_put_row(&segments->adaptive_capacity, adaptive_capacity_row, row);
+            Segment_put_row(&segments->adaptive_capacity, adaptive_capacity_row,
+                            row);
             Segment_put_row(&segments->HUC, HUC_row, row);
             if (inputs.DDF_regions)
                 Segment_put_row(&segments->DDF_subregions, DDF_row, row);
@@ -521,10 +555,11 @@ void read_predictors(struct RasterInputs inputs, struct Segments *segments,
     aggregated_row = Rast_allocate_buf(FCELL_TYPE);
 
     /* Segment open predictors */
-    if (Segment_open(&segments->aggregated_predictor, G_tempfile(), rows,
-                     cols, segment_info.rows, segment_info.cols,
+    if (Segment_open(&segments->aggregated_predictor, G_tempfile(), rows, cols,
+                     segment_info.rows, segment_info.cols,
                      Rast_cell_size(FCELL_TYPE), segment_info.in_memory) != 1)
-        G_fatal_error(_("Cannot create temporary file with segments of predictor raster maps"));
+        G_fatal_error(_("Cannot create temporary file with segments of "
+                        "predictor raster maps"));
 
     /* read in */
     for (row = 0; row < rows; row++) {
@@ -532,25 +567,31 @@ void read_predictors(struct RasterInputs inputs, struct Segments *segments,
             Rast_get_row(fds_predictors[i], predictor_rows[i], row, FCELL_TYPE);
         }
         for (col = 0; col < cols; col++) {
-            ((FCELL *) aggregated_row)[col] = 0;
+            ((FCELL *)aggregated_row)[col] = 0;
             Segment_get(&segments->developed, (void *)&dev_value, row, col);
             if (Rast_is_null_value(&dev_value, CELL_TYPE)) {
                 continue;
             }
             for (i = 0; i < potential->max_predictors; i++) {
-                /* collect all nulls in predictors and set it in output raster */
-                if (Rast_is_null_value(&((FCELL *) predictor_rows[i])[col], FCELL_TYPE)) {
+                /* collect all nulls in predictors and set it in output raster
+                 */
+                if (Rast_is_null_value(&((FCELL *)predictor_rows[i])[col],
+                                       FCELL_TYPE)) {
                     Rast_set_c_null_value(&dev_value, 1);
-                    Segment_put(&segments->developed, (void *)&dev_value, row, col);
+                    Segment_put(&segments->developed, (void *)&dev_value, row,
+                                col);
                     break;
                 }
                 if (segments->use_potential_subregions)
-                    Segment_get(&segments->potential_subregions, (void *)&pot_index, row, col);
+                    Segment_get(&segments->potential_subregions,
+                                (void *)&pot_index, row, col);
                 else
-                    Segment_get(&segments->subregions, (void *)&pot_index, row, col);
+                    Segment_get(&segments->subregions, (void *)&pot_index, row,
+                                col);
                 pred_index = potential->predictor_indices[i];
-                value = potential->predictors[i][pot_index] * ((FCELL *) predictor_rows[pred_index])[col];
-                ((FCELL *) aggregated_row)[col] += value;
+                value = potential->predictors[i][pot_index] *
+                        ((FCELL *)predictor_rows[pred_index])[col];
+                ((FCELL *)aggregated_row)[col] += value;
             }
         }
         Segment_put_row(&segments->aggregated_predictor, aggregated_row, row);
@@ -566,10 +607,8 @@ void read_predictors(struct RasterInputs inputs, struct Segments *segments,
     G_free(aggregated_row);
 }
 
-
-static int _read_demand_file(FILE *fp, const char *separator,
-                             float **table, int *demand_years,
-                             map_int_t *region_map)
+static int _read_demand_file(FILE *fp, const char *separator, float **table,
+                             int *demand_years, map_int_t *region_map)
 {
 
     size_t buflen = 4000;
@@ -599,14 +638,15 @@ static int _read_demand_file(FILE *fp, const char *separator,
     }
 
     int years = 0;
-    while(G_getl2(buf, buflen, fp)) {
+    while (G_getl2(buf, buflen, fp)) {
         if (buf[0] == '\0')
             continue;
 
         tokens = G_tokenize2(buf, separator, td);
         unsigned ntokens2 = G_number_of_tokens(tokens);
         if (ntokens2 != ntokens)
-            G_fatal_error(_("Demand: wrong number of columns in line: %s"), buf);
+            G_fatal_error(_("Demand: wrong number of columns in line: %s"),
+                          buf);
         if (ntokens - 1 < map_nitems(region_map))
             G_fatal_error(_("Demand: some subregions are missing"));
         count = 0;
@@ -642,7 +682,8 @@ void read_demand_file(struct Demand *demandInfo, map_int_t *region_map)
     rewind(fp_cell);
 
     if (demandInfo->has_population) {
-        if ((fp_population = fopen(demandInfo->population_filename, "r")) == NULL)
+        if ((fp_population = fopen(demandInfo->population_filename, "r")) ==
+            NULL)
             G_fatal_error(_("Cannot open population demand file <%s>"),
                           demandInfo->population_filename);
         int countlines2 = 0;
@@ -652,15 +693,18 @@ void read_demand_file(struct Demand *demandInfo, map_int_t *region_map)
         if (countlines != countlines2) {
             G_fatal_error(_("Area and population demand files (<%s> and <%s>) "
                             "have different number of lines"),
-                          demandInfo->cells_filename, demandInfo->population_filename);
+                          demandInfo->cells_filename,
+                          demandInfo->population_filename);
         }
         rewind(fp_population);
     }
 
-    demandInfo->years = (int *) G_malloc(countlines * sizeof(int));
-    demandInfo->cells_table = (float **) G_malloc(map_nitems(region_map) * sizeof(float *));
+    demandInfo->years = (int *)G_malloc(countlines * sizeof(int));
+    demandInfo->cells_table =
+        (float **)G_malloc(map_nitems(region_map) * sizeof(float *));
     for (unsigned i = 0; i < map_nitems(region_map); i++) {
-        demandInfo->cells_table[i] = (float *) G_malloc(countlines * sizeof(float));
+        demandInfo->cells_table[i] =
+            (float *)G_malloc(countlines * sizeof(float));
     }
     int num_years = _read_demand_file(fp_cell, demandInfo->separator,
                                       demandInfo->cells_table,
@@ -671,24 +715,29 @@ void read_demand_file(struct Demand *demandInfo, map_int_t *region_map)
     fclose(fp_cell);
 
     if (demandInfo->has_population) {
-        int *years2 = (int *) G_malloc(countlines * sizeof(int));
-        demandInfo->population_table = (float **) G_malloc(map_nitems(region_map) * sizeof(float *));
+        int *years2 = (int *)G_malloc(countlines * sizeof(int));
+        demandInfo->population_table =
+            (float **)G_malloc(map_nitems(region_map) * sizeof(float *));
         for (unsigned i = 0; i < map_nitems(region_map); i++) {
-            demandInfo->population_table[i] = (float *) G_malloc(countlines * sizeof(float));
+            demandInfo->population_table[i] =
+                (float *)G_malloc(countlines * sizeof(float));
         }
-        int num_years2 = _read_demand_file(fp_population, demandInfo->separator,
-                                          demandInfo->population_table,
-                                          years2, region_map);
+        int num_years2 =
+            _read_demand_file(fp_population, demandInfo->separator,
+                              demandInfo->population_table, years2, region_map);
         // check files for consistency
         if (num_years != num_years2)
             G_fatal_error(_("Area and population demand files (<%s> and <%s>) "
                             "have different number of years"),
-                          demandInfo->cells_filename, demandInfo->population_filename);
+                          demandInfo->cells_filename,
+                          demandInfo->population_filename);
         for (int i = 0; i < num_years; i++) {
             if (demandInfo->years[i] != years2[i])
-                G_fatal_error(_("Area and population demand files (<%s> and <%s>) "
-                                "have different years"),
-                              demandInfo->cells_filename, demandInfo->population_filename);
+                G_fatal_error(
+                    _("Area and population demand files (<%s> and <%s>) "
+                      "have different years"),
+                    demandInfo->cells_filename,
+                    demandInfo->population_filename);
         }
         fclose(fp_population);
         G_free(years2);
@@ -700,14 +749,17 @@ void read_demand_file(struct Demand *demandInfo, map_int_t *region_map)
  * This is used when reading potential file to check column names.
  *
  */
-void fill_predictor_map(struct RasterInputs inputs, map_int_t *predictor_map, int num_predictors) {
+void fill_predictor_map(struct RasterInputs inputs, map_int_t *predictor_map,
+                        int num_predictors)
+{
     char xname[GNAME_MAX], xmapset[GMAPSET_MAX];
     for (int i = 0; i < num_predictors; i++) {
         if (G_unqualified_name(inputs.predictors[i], "", xname, xmapset))
             map_set(predictor_map, xname, i);
         else
             map_set(predictor_map,
-                    G_fully_qualified_name(xname, G_find_raster2(inputs.predictors[i], "")),
+                    G_fully_qualified_name(
+                        xname, G_find_raster2(inputs.predictors[i], "")),
                     i);
         map_set(predictor_map, inputs.predictors[i], i);
     }
@@ -718,8 +770,9 @@ void read_potential_file(struct Potential *potentialInfo, map_int_t *region_map,
 {
     FILE *fp;
     if ((fp = fopen(potentialInfo->filename, "r")) == NULL)
-        G_fatal_error(_("Cannot open development potential parameters file <%s>"),
-                      potentialInfo->filename);
+        G_fatal_error(
+            _("Cannot open development potential parameters file <%s>"),
+            potentialInfo->filename);
 
     const char *td = "\"";
     char **tokens;
@@ -733,7 +786,8 @@ void read_potential_file(struct Potential *potentialInfo, map_int_t *region_map,
     char buf[buflen];
     if (G_getl2(buf, buflen, fp) == 0)
         G_fatal_error(_("Development potential parameters file <%s>"
-                        " contains less than one line"), potentialInfo->filename);
+                        " contains less than one line"),
+                      potentialInfo->filename);
     header_tokens = G_tokenize2(buf, potentialInfo->separator, td);
     header_ntokens = G_number_of_tokens(header_tokens);
     /* num predictors minus region id, intercept and devperssure */
@@ -742,21 +796,28 @@ void read_potential_file(struct Potential *potentialInfo, map_int_t *region_map,
         G_fatal_error(_("Incorrect header in development potential file <%s>"),
                       potentialInfo->filename);
     potentialInfo->max_predictors = num_predictors;
-    potentialInfo->intercept = (double *) G_malloc(map_nitems(region_map) * sizeof(double));
-    potentialInfo->devpressure = (double *) G_malloc(map_nitems(region_map) * sizeof(double));
-    potentialInfo->predictors = (double **) G_malloc(num_predictors * sizeof(double *));
-    potentialInfo->predictor_indices = (int *) G_malloc(num_predictors * sizeof(int));
+    potentialInfo->intercept =
+        (double *)G_malloc(map_nitems(region_map) * sizeof(double));
+    potentialInfo->devpressure =
+        (double *)G_malloc(map_nitems(region_map) * sizeof(double));
+    potentialInfo->predictors =
+        (double **)G_malloc(num_predictors * sizeof(double *));
+    potentialInfo->predictor_indices =
+        (int *)G_malloc(num_predictors * sizeof(int));
     for (i = 0; i < num_predictors; i++) {
-        potentialInfo->predictors[i] = (double *) G_malloc(map_nitems(region_map) * sizeof(double));
+        potentialInfo->predictors[i] =
+            (double *)G_malloc(map_nitems(region_map) * sizeof(double));
     }
     /* index of used predictors in columns within list of predictors */
     for (i = 0; i < num_predictors; i++) {
         pred_idx = map_get(predictor_map, header_tokens[3 + i]);
         if (pred_idx)
-          potentialInfo->predictor_indices[i] = *pred_idx;
+            potentialInfo->predictor_indices[i] = *pred_idx;
         else
-            G_fatal_error(_("Specified predictor <%s> in development potential file <%s>"
-                            " was not provided."), header_tokens[3 + i], potentialInfo->filename);
+            G_fatal_error(
+                _("Specified predictor <%s> in development potential file <%s>"
+                  " was not provided."),
+                header_tokens[3 + i], potentialInfo->filename);
     }
 
     while (G_getl2(buf, buflen, fp)) {
@@ -800,16 +861,15 @@ void read_potential_file(struct Potential *potentialInfo, map_int_t *region_map,
     fclose(fp);
 }
 
-void read_patch_sizes(struct PatchSizes *patch_sizes,
-                      map_int_t *region_map,
+void read_patch_sizes(struct PatchSizes *patch_sizes, map_int_t *region_map,
                       double discount_factor)
 {
     FILE *fp;
     size_t buflen = 4000;
     char buf[buflen];
     int patch;
-    char** tokens = NULL;
-    char** header_tokens;
+    char **tokens = NULL;
+    char **header_tokens;
     unsigned ntokens;
     unsigned i, j;
     unsigned region_id;
@@ -830,7 +890,8 @@ void read_patch_sizes(struct PatchSizes *patch_sizes,
         // scan in the header line
         if (G_getl2(buf, buflen, fp) == 0)
             G_fatal_error(_("Patch library file <%s>"
-                            " contains less than one line"), patch_sizes->filename);
+                            " contains less than one line"),
+                          patch_sizes->filename);
 
         header_tokens = G_tokenize2(buf, ",", td);
         num_regions = G_number_of_tokens(header_tokens);
@@ -839,14 +900,17 @@ void read_patch_sizes(struct PatchSizes *patch_sizes,
         if (num_regions == 1) {
             use_header = false;
             patch_sizes->single_column = true;
-            G_verbose_message(_("Only single column detected in patch library file <%s>."
-                                " It will be used for all subregions."), patch_sizes->filename);
+            G_verbose_message(
+                _("Only single column detected in patch library file <%s>."
+                  " It will be used for all subregions."),
+                patch_sizes->filename);
         }
         /* Check there are enough columns for subregions in map */
         if (num_regions != 1 && num_regions < map_nitems(region_map))
             G_fatal_error(_("Patch library file <%s>"
-                            " has only %d columns but there are %d subregions"), patch_sizes->filename,
-                          num_regions, map_nitems(region_map));
+                            " has only %d columns but there are %d subregions"),
+                          patch_sizes->filename, num_regions,
+                          map_nitems(region_map));
         /* Check all subregions in map have column in the file. */
         if (use_header) {
             iter = map_iter(region_map);
@@ -856,12 +920,13 @@ void read_patch_sizes(struct PatchSizes *patch_sizes,
                     if (strcmp(key, header_tokens[j]) == 0)
                         found = true;
                 if (!found)
-                    G_fatal_error(_("Subregion id <%s> not found in header of patch file <%s>"),
+                    G_fatal_error(_("Subregion id <%s> not found in header of "
+                                    "patch file <%s>"),
                                   key, patch_sizes->filename);
             }
         }
         // initialize patch_info->patch_count to all zero
-        patch_sizes->patch_count = (int*) G_calloc(num_regions, sizeof(int));
+        patch_sizes->patch_count = (int *)G_calloc(num_regions, sizeof(int));
         /* add one for the header reading above */
         if (!use_header)
             n_max_patches++;
@@ -872,15 +937,17 @@ void read_patch_sizes(struct PatchSizes *patch_sizes,
             ntokens = G_number_of_tokens(tokens);
             if (ntokens != num_regions)
                 G_fatal_error(_("Patch library file <%s>"
-                                " has inconsistent number of columns"), patch_sizes->filename);
+                                " has inconsistent number of columns"),
+                              patch_sizes->filename);
             n_max_patches++;
         }
         // in a 2D array
-        patch_sizes->patch_sizes = (int **) G_malloc(sizeof(int * ) * num_regions);
+        patch_sizes->patch_sizes =
+            (int **)G_malloc(sizeof(int *) * num_regions);
         // malloc appropriate size for each area
-        for(i = 0; i < num_regions; i++) {
+        for (i = 0; i < num_regions; i++) {
             patch_sizes->patch_sizes[i] =
-                    (int *) G_malloc(n_max_patches * sizeof(int));
+                (int *)G_malloc(n_max_patches * sizeof(int));
         }
         /* read first line to skip header */
         rewind(fp);
@@ -891,7 +958,7 @@ void read_patch_sizes(struct PatchSizes *patch_sizes,
             tokens = G_tokenize2(buf, ",", td);
             ntokens = G_number_of_tokens(tokens);
             for (i = 0; i < ntokens; i++) {
-                if (strcmp(tokens[i], "") != 0 ) {
+                if (strcmp(tokens[i], "") != 0) {
                     patch = atoi(tokens[i]) * discount_factor;
                     if (patch > 0) {
                         if (patch_sizes->max_patch_size < patch)
@@ -905,7 +972,10 @@ void read_patch_sizes(struct PatchSizes *patch_sizes,
                         }
                         else
                             region_id = 0;
-                        patch_sizes->patch_sizes[region_id][patch_sizes->patch_count[region_id]] = patch;
+                        patch_sizes
+                            ->patch_sizes[region_id]
+                                         [patch_sizes->patch_count[region_id]] =
+                            patch;
                         patch_sizes->patch_count[region_id]++;
                     }
                 }
@@ -936,8 +1006,7 @@ void read_patch_sizes(struct PatchSizes *patch_sizes,
  * @param ddf structure
  * @param DDF_region_map
  */
-void read_DDF_file(struct DepthDamageFunctions *ddf,
-                   map_int_t *DDF_region_map)
+void read_DDF_file(struct DepthDamageFunctions *ddf, map_int_t *DDF_region_map)
 {
     FILE *fp;
     if ((fp = fopen(ddf->filename, "r")) == NULL)
@@ -960,7 +1029,8 @@ void read_DDF_file(struct DepthDamageFunctions *ddf,
     char buf[buflen];
     if (G_getl2(buf, buflen, fp) == 0)
         G_fatal_error(_("Depth-damage functions file <%s>"
-                        " contains less than one line"), ddf->filename);
+                        " contains less than one line"),
+                      ddf->filename);
     header_tokens = G_tokenize2(buf, ddf->separator, td);
     header_ntokens = G_number_of_tokens(header_tokens);
     num_levels = header_ntokens - 1;
@@ -971,11 +1041,11 @@ void read_DDF_file(struct DepthDamageFunctions *ddf,
 
     ddf->max_levels = num_levels;
     ddf->max_subregions = nitems;
-    ddf->levels = (double *) G_malloc(num_levels * sizeof(double));
-    ddf->damage = (double **) G_calloc(nitems, sizeof(double *));
-    ddf->loaded = (bool *) G_malloc(nitems * sizeof(bool));
+    ddf->levels = (double *)G_malloc(num_levels * sizeof(double));
+    ddf->damage = (double **)G_calloc(nitems, sizeof(double *));
+    ddf->loaded = (bool *)G_malloc(nitems * sizeof(bool));
     for (i = 0; i < nitems; i++) {
-        ddf->damage[i] = (double *) G_malloc(num_levels * sizeof(double));
+        ddf->damage[i] = (double *)G_malloc(num_levels * sizeof(double));
         ddf->loaded[i] = false;
     }
     /* read inundation levels */
@@ -1034,7 +1104,8 @@ void create_bboxes(SEGMENT *raster, SEGMENT *masking, struct BBoxes *bboxes)
     map_init(&bboxes->map);
     bboxes->max_bbox = 100;
     bboxes->n_bbox = 0;
-    bboxes->bbox = (struct BBox *) G_malloc(bboxes->max_bbox * sizeof(struct BBox));
+    bboxes->bbox =
+        (struct BBox *)G_malloc(bboxes->max_bbox * sizeof(struct BBox));
     for (row = 0; row < rows; row++)
         for (col = 0; col < cols; col++) {
             Segment_get(masking, (void *)&cat, row, col);
@@ -1055,9 +1126,8 @@ void create_bboxes(SEGMENT *raster, SEGMENT *masking, struct BBoxes *bboxes)
             else {
                 if (bboxes->n_bbox == bboxes->max_bbox) {
                     bboxes->max_bbox *= 2;
-                    bboxes->bbox =
-                            (struct BBox *) G_realloc(bboxes->bbox,
-                                                      bboxes->max_bbox * sizeof(struct BBox));
+                    bboxes->bbox = (struct BBox *)G_realloc(
+                        bboxes->bbox, bboxes->max_bbox * sizeof(struct BBox));
                 }
                 /* HUC idx -> bbox idx */
                 map_set_int(&bboxes->map, cat, bboxes->n_bbox);
@@ -1070,8 +1140,9 @@ void create_bboxes(SEGMENT *raster, SEGMENT *masking, struct BBoxes *bboxes)
         }
 }
 
-void update_flood_probability(int step, const struct FloodInputs *flood_inputs, struct Segments *segments,
-                              map_int_t *HUC_map, map_float_t *max_flood_probability_map)
+void update_flood_probability(int step, const struct FloodInputs *flood_inputs,
+                              struct Segments *segments, map_int_t *HUC_map,
+                              map_float_t *max_flood_probability_map)
 {
     int i;
     int row, col;
@@ -1102,18 +1173,22 @@ void update_flood_probability(int step, const struct FloodInputs *flood_inputs, 
 
     for (i = 0; i < flood_inputs->size; i++)
         if (flood_inputs->array[i].step == step) {
-            fd_flood_probability = Rast_open_old(flood_inputs->array[i].map, "");
-            G_verbose_message("Loading flood probability raster %s", flood_inputs->array[i].map);
+            fd_flood_probability =
+                Rast_open_old(flood_inputs->array[i].map, "");
+            G_verbose_message("Loading flood probability raster %s",
+                              flood_inputs->array[i].map);
             break;
         }
 
     flood_probability_row = Rast_allocate_buf(FCELL_TYPE);
     for (row = 0; row < Rast_window_rows(); row++) {
-        Rast_get_row(fd_flood_probability, flood_probability_row, row, FCELL_TYPE);
+        Rast_get_row(fd_flood_probability, flood_probability_row, row,
+                     FCELL_TYPE);
         for (col = 0; col < Rast_window_cols(); col++) {
-            if (!Rast_is_null_value(&((FCELL *) flood_probability_row)[col], FCELL_TYPE)) {
+            if (!Rast_is_null_value(&((FCELL *)flood_probability_row)[col],
+                                    FCELL_TYPE)) {
                 Segment_get(&segments->HUC, (void *)&HUC_index, row, col);
-                fc = ((FCELL *) flood_probability_row)[col];
+                fc = ((FCELL *)flood_probability_row)[col];
                 pvalue = map_get_int(max_flood_probability_map, HUC_index);
                 if (pvalue) {
                     max_flood_probability = *pvalue;
@@ -1124,12 +1199,12 @@ void update_flood_probability(int step, const struct FloodInputs *flood_inputs, 
                     map_set_int(max_flood_probability_map, HUC_index, fc);
             }
         }
-        Segment_put_row(&segments->flood_probability, flood_probability_row, row);
+        Segment_put_row(&segments->flood_probability, flood_probability_row,
+                        row);
     }
     Segment_flush(&segments->flood_probability);
     G_free(flood_probability_row);
 }
-
 
 void read_flood_file(struct FloodInputs *flood_inputs)
 {
@@ -1151,7 +1226,8 @@ void read_flood_file(struct FloodInputs *flood_inputs)
 
     if (G_getl2(buf, buflen, fp) == 0)
         G_fatal_error(_("Flood inputs file <%s>"
-                        " contains less than one line"), flood_inputs->filename);
+                        " contains less than one line"),
+                      flood_inputs->filename);
     header_tokens = G_tokenize2(buf, flood_inputs->separator, td);
     header_ntokens = G_number_of_tokens(header_tokens);
     if (header_ntokens == 3)
@@ -1159,8 +1235,9 @@ void read_flood_file(struct FloodInputs *flood_inputs)
     else if (header_ntokens == 2)
         flood_inputs->depth = false;
     else
-        G_fatal_error(_("Incorrect number of columns (%d) detected in file <%s>"),
-                      header_ntokens, flood_inputs->filename);
+        G_fatal_error(
+            _("Incorrect number of columns (%d) detected in file <%s>"),
+            header_ntokens, flood_inputs->filename);
     /* read to get length and checks */
     i = 0;
     while (G_getl2(buf, buflen, fp)) {
@@ -1169,10 +1246,12 @@ void read_flood_file(struct FloodInputs *flood_inputs)
         ntokens = G_number_of_tokens(tokens);
         if (ntokens != header_ntokens)
             G_fatal_error(_("Flood input file <%s>"
-                            " has inconsistent number of columns"), flood_inputs->filename);
+                            " has inconsistent number of columns"),
+                          flood_inputs->filename);
         i++;
     }
-    flood_inputs->array = (struct FloodInput *) G_malloc(sizeof(struct FloodInput) * i);
+    flood_inputs->array =
+        (struct FloodInput *)G_malloc(sizeof(struct FloodInput) * i);
     flood_inputs->return_periods = G_calloc(i, sizeof(float));
     flood_inputs->steps = G_calloc(i, sizeof(int));
     i = 0;
@@ -1206,7 +1285,8 @@ void read_flood_file(struct FloodInputs *flood_inputs)
             }
         }
         if (!found) {
-            flood_inputs->steps[flood_inputs->num_steps] = flood_inputs->array[i].step;
+            flood_inputs->steps[flood_inputs->num_steps] =
+                flood_inputs->array[i].step;
             flood_inputs->num_steps++;
         }
     }
@@ -1218,17 +1298,20 @@ void read_flood_file(struct FloodInputs *flood_inputs)
         for (i = 1; i < flood_inputs->size; i++) {
             found = false;
             for (j = 0; j < flood_inputs->num_return_periods; j++) {
-                if (flood_inputs->array[i].return_period == flood_inputs->return_periods[j]) {
+                if (flood_inputs->array[i].return_period ==
+                    flood_inputs->return_periods[j]) {
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                flood_inputs->return_periods[flood_inputs->num_return_periods] = flood_inputs->array[i].return_period;
+                flood_inputs->return_periods[flood_inputs->num_return_periods] =
+                    flood_inputs->array[i].return_period;
                 flood_inputs->num_return_periods++;
             }
         }
-        qsort(flood_inputs->return_periods, flood_inputs->num_return_periods, sizeof(float), float_cmp);
+        qsort(flood_inputs->return_periods, flood_inputs->num_return_periods,
+              sizeof(float), float_cmp);
     }
     G_free_tokens(header_tokens);
     fclose(fp);
@@ -1243,21 +1326,27 @@ void init_flood_segment(const struct FloodInputs *flood_inputs,
     rows = Rast_window_rows();
     cols = Rast_window_cols();
     if (flood_inputs->depth) {
-        flood_depths_segment_cell_size = sizeof(FCELL) * flood_inputs->num_return_periods;
-        if (Segment_open(&segments->flood_depths, G_tempfile(), rows,
-                         cols, segment_info.rows, segment_info.cols,
-                         flood_depths_segment_cell_size, segment_info.in_memory) != 1)
-            G_fatal_error(_("Cannot create temporary file with segments of flood depth raster maps"));
+        flood_depths_segment_cell_size =
+            sizeof(FCELL) * flood_inputs->num_return_periods;
+        if (Segment_open(&segments->flood_depths, G_tempfile(), rows, cols,
+                         segment_info.rows, segment_info.cols,
+                         flood_depths_segment_cell_size,
+                         segment_info.in_memory) != 1)
+            G_fatal_error(_("Cannot create temporary file with segments of "
+                            "flood depth raster maps"));
     }
     else {
-        if (Segment_open(&segments->flood_probability, G_tempfile(), rows,
-                         cols, segment_info.rows, segment_info.cols,
-                         Rast_cell_size(FCELL_TYPE), segment_info.in_memory) != 1)
-            G_fatal_error(_("Cannot create temporary file with segments of flood probability raster maps"));
+        if (Segment_open(&segments->flood_probability, G_tempfile(), rows, cols,
+                         segment_info.rows, segment_info.cols,
+                         Rast_cell_size(FCELL_TYPE),
+                         segment_info.in_memory) != 1)
+            G_fatal_error(_("Cannot create temporary file with segments of "
+                            "flood probability raster maps"));
     }
 }
 
-void update_flood_depth(int step, const struct FloodInputs *flood_inputs, struct Segments *segments,
+void update_flood_depth(int step, const struct FloodInputs *flood_inputs,
+                        struct Segments *segments,
                         map_float_t *max_flood_probability_map)
 {
     int i;
@@ -1290,21 +1379,27 @@ void update_flood_depth(int step, const struct FloodInputs *flood_inputs, struct
 
     while (rp < flood_inputs->num_return_periods) {
         if (flood_inputs->array[i].step == step &&
-                flood_inputs->array[i].return_period == flood_inputs->return_periods[rp]) {
-            fds_flood_depths[rp] = Rast_open_old(flood_inputs->array[i].map, "");
-            G_verbose_message("Loading flood depth raster %s", flood_inputs->array[i].map);
+            flood_inputs->array[i].return_period ==
+                flood_inputs->return_periods[rp]) {
+            fds_flood_depths[rp] =
+                Rast_open_old(flood_inputs->array[i].map, "");
+            G_verbose_message("Loading flood depth raster %s",
+                              flood_inputs->array[i].map);
             rp++;
         }
         if (++i >= flood_inputs->size)
             i = 0;
     }
     flood_depths_row = Rast_allocate_buf(FCELL_TYPE);
-    flood_depths_seg_row = G_malloc(cols * flood_inputs->num_return_periods * sizeof(FCELL));
+    flood_depths_seg_row =
+        G_malloc(cols * flood_inputs->num_return_periods * sizeof(FCELL));
     for (row = 0; row < rows; row++) {
         for (rp = 0; rp < flood_inputs->num_return_periods; rp++) {
-            Rast_get_row(fds_flood_depths[rp], flood_depths_row, row, FCELL_TYPE);
+            Rast_get_row(fds_flood_depths[rp], flood_depths_row, row,
+                         FCELL_TYPE);
             for (col = 0; col < cols; col++)
-                flood_depths_seg_row[col * flood_inputs->num_return_periods + rp] = flood_depths_row[col];
+                flood_depths_seg_row[col * flood_inputs->num_return_periods +
+                                     rp] = flood_depths_row[col];
         }
         Segment_put_row(&segments->flood_depths, flood_depths_seg_row, row);
     }

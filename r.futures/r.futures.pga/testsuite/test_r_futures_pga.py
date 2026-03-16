@@ -6,7 +6,6 @@ import grass.script as gs
 
 
 class TestPGA(TestCase):
-
     output = "pga_output"
     result = "result"
     potential_test = "data/potential_test.csv"

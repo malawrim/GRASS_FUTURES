@@ -24,25 +24,24 @@
 #include "output.h"
 #include "inputs.h"
 
-
-static void create_timestamp(int year, struct TimeStamp* timestamp)
+static void create_timestamp(int year, struct TimeStamp *timestamp)
 {
     struct DateTime date_time;
-    datetime_set_type(&date_time, DATETIME_ABSOLUTE,
-                      DATETIME_YEAR, DATETIME_YEAR, 0);
+    datetime_set_type(&date_time, DATETIME_ABSOLUTE, DATETIME_YEAR,
+                      DATETIME_YEAR, 0);
     datetime_set_year(&date_time, year);
     G_init_timestamp(timestamp);
     G_set_timestamp(timestamp, &date_time);
 }
 static void create_timestamp_range(int year_from, int year_to,
-                                   struct TimeStamp* timestamp)
+                                   struct TimeStamp *timestamp)
 {
     struct DateTime date_time1;
     struct DateTime date_time2;
-    datetime_set_type(&date_time1, DATETIME_ABSOLUTE,
-                      DATETIME_YEAR, DATETIME_YEAR, 0);
-    datetime_set_type(&date_time2, DATETIME_ABSOLUTE,
-                      DATETIME_YEAR, DATETIME_YEAR, 0);
+    datetime_set_type(&date_time1, DATETIME_ABSOLUTE, DATETIME_YEAR,
+                      DATETIME_YEAR, 0);
+    datetime_set_type(&date_time2, DATETIME_ABSOLUTE, DATETIME_YEAR,
+                      DATETIME_YEAR, 0);
     datetime_set_year(&date_time1, year_from);
     datetime_set_year(&date_time2, year_to);
     G_init_timestamp(timestamp);
@@ -65,7 +64,6 @@ char *name_for_step(const char *basename, const int step, const int nsteps)
     return G_generate_basename(basename, step + 1, digits, 0);
 }
 
-
 /*!
  * \brief Write current state of developed areas.
  * \param developed_segment segment of developed cells
@@ -78,7 +76,8 @@ char *name_for_step(const char *basename, const int step, const int nsteps)
  *        step when they were abandoned.
  */
 void output_developed_step(SEGMENT *developed_segment, const char *name,
-                           int year_from, int year_to, int nsteps, bool contains_abandoned)
+                           int year_from, int year_to, int nsteps,
+                           bool contains_abandoned)
 {
     int out_fd;
     int row, col, rows, cols;
@@ -124,9 +123,8 @@ void output_developed_step(SEGMENT *developed_segment, const char *name,
     if (contains_abandoned) {
         val1 = -nsteps;
         val2 = -1;
-        Rast_add_c_color_rule(&val1, 230, 163, 255, &val2, 60, 0, 80,
-                              &colors);
-     }
+        Rast_add_c_color_rule(&val1, 230, 163, 255, &val2, 60, 0, 80, &colors);
+    }
     else {
         val1 = DEV_TYPE_UNDEVELOPED;
         val2 = DEV_TYPE_UNDEVELOPED;
@@ -135,12 +133,10 @@ void output_developed_step(SEGMENT *developed_segment, const char *name,
     }
     val1 = 0;
     val2 = 0;
-    Rast_add_c_color_rule(&val1, 200, 200, 200, &val2, 200, 200, 200,
-                          &colors);
+    Rast_add_c_color_rule(&val1, 200, 200, 200, &val2, 200, 200, 200, &colors);
     val1 = 1;
     val2 = nsteps;
-    Rast_add_c_color_rule(&val1, 255, 100, 50, &val2, 255, 255, 0,
-                          &colors);
+    Rast_add_c_color_rule(&val1, 255, 100, 50, &val2, 255, 255, 0, &colors);
 
     mapset = G_find_file2("cell", name, "");
 
@@ -152,7 +148,8 @@ void output_developed_step(SEGMENT *developed_segment, const char *name,
 
     Rast_short_history(name, "raster", &hist);
     Rast_command_history(&hist);
-    // TODO: store also random seed value (need to get it here, global? in Params?)
+    // TODO: store also random seed value (need to get it here, global? in
+    // Params?)
     Rast_write_history(name, &hist);
     struct TimeStamp timestamp;
     if (year_to < 0)
@@ -162,7 +159,6 @@ void output_developed_step(SEGMENT *developed_segment, const char *name,
     G_write_raster_timestamp(name, &timestamp);
 
     G_message(_("Raster map <%s> created"), name);
-
 }
 
 /*!
@@ -205,5 +201,4 @@ void output_step(SEGMENT *output_segment, SEGMENT *developed_segment,
     Rast_close(out_fd);
 
     G_message(_("Raster map <%s> created"), name);
-
 }

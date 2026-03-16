@@ -1,13 +1,13 @@
 /*!
    \file climate.c
-   
+
    \brief Functions for climate scenarios (flooding)
-   
+
    (C) 2020-2021 by Anna Petrasova and the GRASS Development Team
-   
+
    This program is free software under the GNU General Public License
    (>=v2).  Read the file COPYING that comes with GRASS for details.
-   
+
    \author Anna Petrasova
  */
 #include <math.h>
@@ -46,8 +46,8 @@ void initialize_flood_log(struct FloodLog *log, int maxsize)
     log->size = 0;
 }
 
-void log_flood(struct FloodLog *log, int step,
-               int HUC_idx, float flood_probability)
+void log_flood(struct FloodLog *log, int step, int HUC_idx,
+               float flood_probability)
 {
     log->steps[log->size] = step;
     log->HUC_indices[log->size] = HUC_idx;
@@ -76,8 +76,8 @@ void write_flood_log(struct FloodLog *log, const char *filename,
     fp = fopen(filename, "w");
     for (i = 0; i < log->size; i++) {
         huc_id = map_get_int(&rev_HUC_map, log->HUC_indices[i]);
-        fprintf(fp, "%d,%d,%.4f\n", log->steps[i],
-                *huc_id, log->flood_levels[i]);
+        fprintf(fp, "%d,%d,%.4f\n", log->steps[i], *huc_id,
+                log->flood_levels[i]);
     }
     fclose(fp);
     map_deinit(&rev_HUC_map);
@@ -92,7 +92,7 @@ void write_flood_log(struct FloodLog *log, const char *filename,
  * \param row
  * \param col
  */
-void adapt(SEGMENT *adaptation,  float flood_probability, int row, int col)
+void adapt(SEGMENT *adaptation, float flood_probability, int row, int col)
 {
     unsigned i;
     int rp[] = {2, 5, 10, 20, 50, 100};
@@ -167,16 +167,19 @@ static float depth_to_damage(float depth, int region_idx,
  * \return index of a region
  */
 static int get_DDF_region_index(struct Segments *segments,
-                                const struct DepthDamageFunctions *ddf,
-                                int row, int col) {
+                                const struct DepthDamageFunctions *ddf, int row,
+                                int col)
+{
     CELL DDF_region_idx;
 
     if (ddf->subregions_source == DDF_CUSTOM)
-        Segment_get(&segments->DDF_subregions, (void *)&DDF_region_idx, row, col);
+        Segment_get(&segments->DDF_subregions, (void *)&DDF_region_idx, row,
+                    col);
     else if (ddf->subregions_source == DDF_DEFAULT)
         Segment_get(&segments->subregions, (void *)&DDF_region_idx, row, col);
     else if (ddf->subregions_source == DDF_POTENTIAL)
-        Segment_get(&segments->potential_subregions, (void *)&DDF_region_idx, row, col);
+        Segment_get(&segments->potential_subregions, (void *)&DDF_region_idx,
+                    row, col);
     else
         DDF_region_idx = 0;
 
@@ -192,8 +195,8 @@ static int get_DDF_region_index(struct Segments *segments,
  * \param flood_probability resulting flood frequency (as probability)
  * \return true if flood event occures, otherwise false
  */
-bool generate_flood(map_float_t *flood_probability_map,
-                    int region_idx, float *flood_probability)
+bool generate_flood(map_float_t *flood_probability_map, int region_idx,
+                    float *flood_probability)
 {
     float *max_flood_probability;
     double p;
@@ -221,8 +224,8 @@ bool generate_flood(map_float_t *flood_probability_map,
  * \return max HAND value
  */
 float get_max_HAND(struct Segments *segments, const struct BBox *bbox,
-                   float flood_probability, struct HAND_bbox_values *HAND_bbox_vals,
-                   float percentile)
+                   float flood_probability,
+                   struct HAND_bbox_values *HAND_bbox_vals, float percentile)
 {
     FCELL flood_probability_value;
     FCELL HAND_value;
@@ -234,7 +237,8 @@ float get_max_HAND(struct Segments *segments, const struct BBox *bbox,
     max_HAND_value = 0;
     for (row = bbox->n; row <= bbox->s; row++)
         for (col = bbox->w; col <= bbox->w; col++) {
-            Segment_get(&segments->flood_probability, (void *)&flood_probability_value, row, col);
+            Segment_get(&segments->flood_probability,
+                        (void *)&flood_probability_value, row, col);
             if (flood_probability_value >= flood_probability) {
                 Segment_get(&segments->HAND, (void *)&HAND_value, row, col);
                 if (!Rast_is_null_value(&HAND_value, FCELL_TYPE)) {
@@ -248,9 +252,8 @@ float get_max_HAND(struct Segments *segments, const struct BBox *bbox,
     return max_HAND_value;
 }
 
-float get_depth(SEGMENT *flood_depths, float flood_probability,
-                int row, int col, FCELL *values,
-                const struct FloodInputs *flood_inputs)
+float get_depth(SEGMENT *flood_depths, float flood_probability, int row,
+                int col, FCELL *values, const struct FloodInputs *flood_inputs)
 {
     int i = flood_inputs->num_return_periods;
     Segment_get(flood_depths, values, row, col);
@@ -271,8 +274,7 @@ float get_depth(SEGMENT *flood_depths, float flood_probability,
     return values[0];
 }
 
-float get_depth_flood_level(SEGMENT *hand, float flood_level,
-                            int row, int col)
+float get_depth_flood_level(SEGMENT *hand, float flood_level, int row, int col)
 {
     FCELL HAND_value;
     float depth;
@@ -280,7 +282,6 @@ float get_depth_flood_level(SEGMENT *hand, float flood_level,
     depth = flood_level - HAND_value;
     return depth > 0 ? depth : 0;
 }
-
 
 /*!
  * \brief Get damage caused by flooding.
@@ -296,7 +297,8 @@ float get_depth_flood_level(SEGMENT *hand, float flood_level,
  * \param col col
  * \return structural damage (0: no damage, 1: total destruction)
  */
-float get_damage(struct Segments *segments, const struct DepthDamageFunctions *ddf,
+float get_damage(struct Segments *segments,
+                 const struct DepthDamageFunctions *ddf,
                  float flood_probability, float depth, int row, int col)
 {
     int DDF_region_idx;
@@ -331,14 +333,16 @@ enum FloodResponse flood_response(float damage, float adaptive_capacity,
     else
         gauss_xy(0, response->stddev, &x, &y);
     if (adaptive_capacity + x > 0) {
-        response_val = response->resilience_a * (adaptive_capacity + x) + response->resilience_b;
+        response_val = response->resilience_a * (adaptive_capacity + x) +
+                       response->resilience_b;
         if (damage + y > response_val)
             return Retreat;
         else
             return Adapt;
     }
     else {
-        response_val = response->vulnerability_a * (adaptive_capacity + x) + response->vulnerability_b;
+        response_val = response->vulnerability_a * (adaptive_capacity + x) +
+                       response->vulnerability_b;
         if (damage + y > response_val)
             return Retreat;
         else

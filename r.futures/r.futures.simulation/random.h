@@ -3,8 +3,7 @@
 
 #include <stdbool.h>
 
-struct GaussGenerator
-{
+struct GaussGenerator {
     double spare;
     bool has_spare;
     double mean;
@@ -12,7 +11,8 @@ struct GaussGenerator
 };
 
 void gauss_xy(double mean, double std_dev, double *x, double *y);
-void gauss_generator_init(struct GaussGenerator* generator, double mean, double std_dev);
-double gauss_generator_next(struct GaussGenerator* generator);
+void gauss_generator_init(struct GaussGenerator *generator, double mean,
+                          double std_dev);
+double gauss_generator_next(struct GaussGenerator *generator);
 
 #endif // FUTURES_RANDOM_H
