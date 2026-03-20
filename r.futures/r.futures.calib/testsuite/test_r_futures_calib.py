@@ -6,7 +6,6 @@ from grass.gunittest.main import test
 
 
 class TestPGACalib(TestCase):
-
     pga_params = dict(
         development_pressure="devpressure",
         predictors=["slope", "lakes_dist_km", "streets_dist_km"],
@@ -142,7 +141,7 @@ class TestPGACalib(TestCase):
             nprocs=1,
             repeat=2,
             random_seed=1,
-            **self.pga_params
+            **self.pga_params,
         )
         self.assertTrue(
             filecmp.cmp("data/out_calib.csv", "data/ref_calib.csv", shallow=False),
@@ -165,7 +164,7 @@ class TestPGACalib(TestCase):
             nprocs=1,
             repeat=2,
             random_seed=1,
-            **self.pga_params
+            **self.pga_params,
         )
         self.assertTrue(
             filecmp.cmp(

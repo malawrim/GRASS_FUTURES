@@ -118,8 +118,8 @@ float get_percentile(float *array, size_t n, int p)
  */
 int float_cmp(const void *a, const void *b)
 {
-    float fa = *(const float*) a;
-    float fb = *(const float*) b;
+    float fa = *(const float *)a;
+    float fb = *(const float *)b;
     return (fa > fb) - (fa < fb);
 }
 /*!
@@ -127,7 +127,7 @@ int float_cmp(const void *a, const void *b)
  */
 int int_cmp(const void *a, const void *b)
 {
-    int fa = *(const int*) a;
-    int fb = *(const int*) b;
+    int fa = *(const int *)a;
+    int fb = *(const int *)b;
     return (fa > fb) - (fa < fb);
 }

@@ -21,7 +21,7 @@
 /*!
  * \brief Generates 2 numbers from normal distribution N(mean, std_dev)
  * using Marsaglia polar method.
- * 
+ *
  * \param[in] mean
  * \param[in] std_dev
  * \param[out] x
@@ -46,7 +46,8 @@ void gauss_xy(double mean, double std_dev, double *x, double *y)
  * \brief Initialize gauss generator structure
  * with distribution parameters N(mean, std_dev).
  */
-void gauss_generator_init(struct GaussGenerator* generator, double mean, double std_dev)
+void gauss_generator_init(struct GaussGenerator *generator, double mean,
+                          double std_dev)
 {
     generator->has_spare = false;
     generator->mean = mean;
@@ -55,19 +56,20 @@ void gauss_generator_init(struct GaussGenerator* generator, double mean, double 
 
 /*!
  * \brief Returns number from normal distribution N(mean, std_dev).
- * GaussGenerator structure needs to be initialezed first with 
+ * GaussGenerator structure needs to be initialezed first with
  * gauss_generator_init.
  *
  * \return random number
  */
-double gauss_generator_next(struct GaussGenerator* generator)
+double gauss_generator_next(struct GaussGenerator *generator)
 {
     double x, y;
 
     if (generator->has_spare) {
         generator->has_spare = false;
         return generator->spare;
-    } else {
+    }
+    else {
         gauss_xy(generator->mean, generator->std_dev, &x, &y);
         generator->spare = y;
         generator->has_spare = true;

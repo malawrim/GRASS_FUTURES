@@ -248,10 +248,10 @@ def main():
     debug = []
     i = 0
     if plot:
-        import matplotlib
+        import matplotlib as mpl
 
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
+        mpl.use("Agg")
+        import mpl.pyplot as plt
 
         n_plots = int(np.ceil(np.sqrt(len(subregionIds))))
         fig = plt.figure(figsize=(5 * n_plots, 5 * n_plots))
@@ -299,10 +299,8 @@ def main():
                     except (FloatingPointError, RuntimeError):
                         gcore.warning(
                             _(
-                                "Method '{m}' cannot converge for subregion {reg}".format(
-                                    m=method, reg=subregionId
-                                )
-                            )
+                                "Method '{m}' cannot converge for subregion {reg}"
+                            ).format(m=method, reg=subregionId)
                         )
                         rmse[method] = sys.maxsize  # so that other method is selected
                         coeff[method] = (np.nan, np.nan, np.nan)
@@ -397,10 +395,8 @@ def main():
             gcore.warning(
                 _(
                     "Subregion {sub} has negative numbers"
-                    " of newly developed cells, changing to zero".format(
-                        sub=subregionId
-                    )
-                )
+                    " of newly developed cells, changing to zero"
+                ).format(sub=subregionId)
             )
             demand[subregionId][demand[subregionId] < 0] = 0
         if coeff[method][0] < 0 or np.isnan(coeff[method][0]):
@@ -416,10 +412,8 @@ def main():
             gcore.warning(
                 _(
                     "For subregion {sub} population and development are inversely proportional,"
-                    " demand will be interpolated based on prior change in development only.".format(
-                        sub=subregionId
-                    )
-                )
+                    " demand will be interpolated based on prior change in development only."
+                ).format(sub=subregionId)
             )
         # write population demand
         population_demand[subregionId] = np.diff(
@@ -459,7 +453,7 @@ def main():
                     label = "$y = {c:.3f} + {m:.3f} x$".format(m=cf[0], c=cf[1])
                 elif method == "logarithmic":
                     line = np.log(x_pred) * cf[0] + cf[1]
-                    label = "$y = {c:.3f} + {m:.3f} \ln(x)$".format(m=cf[0], c=cf[1])
+                    label = r"$y = {c:.3f} + {m:.3f} \ln(x)$".format(m=cf[0], c=cf[1])
                 elif method == "exponential":
                     line = np.exp(x_pred * cf[0] + cf[1])
                     label = "$y = {c:.3f} e^{{{m:.3f}x}}$".format(
@@ -472,7 +466,7 @@ def main():
                     )
                 elif method == "logarithmic2":
                     line = logarithmic2(x_pred / magn, *cf) * magn
-                    label = "$y = {A:.3f} + {B:.3f} \ln(x-{C:.3f})$".format(
+                    label = r"$y = {A:.3f} + {B:.3f} \ln(x-{C:.3f})$".format(
                         A=cf[0], B=cf[1], C=cf[2]
                     )
                 ax.plot(x_pred, line, label=label)
