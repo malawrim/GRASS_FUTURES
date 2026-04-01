@@ -221,7 +221,7 @@ int main(int argc, char **argv)
     float leaving_population;
     bool overgrow;
     size_t undev_estimate;
-    struct ZoningEffects zoning_effects;
+    struct ZoningEffects zoning_effects = {0};
 
     G_gisinit(argv[0]);
 

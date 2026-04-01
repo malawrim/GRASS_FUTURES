@@ -206,12 +206,12 @@ void init_flood_segment(const struct FloodInputs *flood_inputs,
 void update_flood_depth(int step, const struct FloodInputs *flood_inputs,
                         struct Segments *segments,
                         map_float_t *max_flood_probability_map);
-/* initalize zoning_effects to defaults*/
+/* initialize zoning_effects to defaults */
 void initialize_zoning_effects(struct ZoningEffects *zoning_effects);
 /* read zoning effects from file */
 void read_zoning_file(struct ZoningEffects *zoning_effects,
                       map_int_t *region_map);
-/* convert zoning id to effect*/
+/* convert zoning id to effect */
 float zone_to_effect(struct ZoningEffects *zoning_effects, int id,
                      int region_idx);
 #endif // FUTURES_INPUTS_H

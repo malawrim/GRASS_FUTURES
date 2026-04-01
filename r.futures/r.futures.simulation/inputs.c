@@ -848,6 +848,7 @@ void read_potential_file(struct Potential *potentialInfo, map_int_t *region_map,
                   " was not provided."),
                 header_tokens[3 + i], potentialInfo->filename);
     }
+    G_free(header_tokens);
 
     while (G_getl2(buf, buflen, fp)) {
         if (buf[0] == '\0')
@@ -1508,7 +1509,7 @@ void read_zoning_file(struct ZoningEffects *zoning_effects,
         header_tokens = G_tokenize2(buf, zoning_effects->separator, td);
         header_ntokens = G_number_of_tokens(header_tokens);
         /* number of zones is number of headers minus 2 (region ID and
-         * stringency)*/
+         * stringency) */
         int num_zones = header_ntokens - 2;
         /* TODO could add a check here against the number of unique zones in
          * zoning file*/
@@ -1614,13 +1615,13 @@ float zone_to_effect(struct ZoningEffects *zoning_effects, int id,
     int num_zones = zoning_effects->num_zones;
     int num_regions = zoning_effects->num_regions;
     if (num_regions > 0) {
+        // This could be optimized with hash map or 2D array
         for (int i = 0; i < (num_zones * num_regions); i++) {
             if ((zoning_effects->zones[i].id == id) &&
                 (zoning_effects->zones[i].region == region_idx)) {
                 return zoning_effects->zones[i].effect;
             }
         }
-        // not found
         G_fatal_error(_("No zoning effect found for zone id %d in region index "
                         "%d. Values in zoning raster (zoning IDs) must be one "
                         "of the predefined IDs (see documentation) or must be "
@@ -1639,4 +1640,5 @@ float zone_to_effect(struct ZoningEffects *zoning_effects, int id,
               "documentation) or must be provided in zoning_effects file."),
             id);
     }
+    return 0;
 }
