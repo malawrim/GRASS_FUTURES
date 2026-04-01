@@ -70,11 +70,11 @@ The probability surface is transformed from initial probability <em>p</em>
 with value <em>w</em> to p + w - p * w.
 
 <p>
-Parameters <b>zoning</b> (raster containing zoning district IDs) and <b>zoning_effects</b> 
+Parameters <b>zoning</b> (raster containing zoning district IDs) and <b>zoning_effects</b>
 (table containing zoning effects corresponding to zoning district IDs) enable users to include
 land use regulations (e.g., zoning) which constrain or incentivize development. <b>zoning</b> can be used
 alone or in combination with <b>zoning_effects</b>. If <b>zoning_effects</b> is not provided,
-any or all of the following zoning IDs should be present in the <b>zoning</b> raster and the predefined 
+any or all of the following zoning IDs should be present in the <b>zoning</b> raster and the predefined
 zoning effects are applied.
 <br><br>
 <table>
@@ -96,13 +96,13 @@ zoning effects are applied.
 </table>
 <br>
 Where zoning effects are lower than 0, site suitability is decreased, when greater than 0
-site suitability is increased. For zoning effect (<em>w'</em>) less than 0, site suitability (<em>p</em>) 
-is adjusted following p(1 - |w'|). If zoning effects are greater than 0, site suitability is adjusted 
+site suitability is increased. For zoning effect (<em>w'</em>) less than 0, site suitability (<em>p</em>)
+is adjusted following p(1 - |w'|). If zoning effects are greater than 0, site suitability is adjusted
 following p + w' - p * w'. Note: If part of your study region does not have zoning, or you do not wish to apply the zoning
 effect to part of your study region, you may assign zoning ID 0 to those areas. <br>
 <br>
 Users can also optionally provide unique zoning effects (values between -1 and 1)
-or regional stringency values (values between 0 and 2) in <b>zoning_effects</b> table. 
+or regional stringency values (values between 0 and 2) in <b>zoning_effects</b> table.
 Stringency values adjust the magnitude of the effect of each zoning district by region.
 Values less than 1 reduce the magnitude of zoning effects while values greater than
 1 increase the magnitude. Given zoning effect <em>w</em> and stringency <em>s</em>,
@@ -110,7 +110,7 @@ adjusted zoning effects <em>w'</em> = max(-1, min(1, w * s)). <br>
 
 <br>Examples of <b>zoning_effects</b> table<br>
 
-Region_ID values in the first column should align with region IDs in <b>subregions</b> raster 
+Region_ID values in the first column should align with region IDs in <b>subregions</b> raster
 and zoning ID column headers should align with zoning IDs in <b>zoning</b> raster. <br> <br>
 
 Providing unique zoning IDs (1, 2) and effects, but no regional stringency (set to 1):
