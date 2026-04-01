@@ -584,8 +584,9 @@ int main(int argc, char **argv)
     opt.zoningFile->label = _("CSV file with zoning effects per region");
     opt.zoningFile->description =
         _("Each line should contain region ID followed"
-          " by an intercept indicating weight per region and effects for each "
-          "unique zoning district."
+          " by a stringency value per region and effects for each "
+          "unique zoning district. If you do not wish to apply "
+          "stringency effect, set stringency value to 1."
           " If zoning districts are excluded, predefined effects will be "
           "applied for each zoning district.");
     opt.zoningFile->guisection = _("Scenarios");
@@ -924,6 +925,7 @@ int main(int argc, char **argv)
             }
         }
         else {
+            zoning_effects.user_effects = false;
             read_zoning_file(&zoning_effects, &region_map);
         }
         /* TODO if we allow user to introduce a zoning region map, replace

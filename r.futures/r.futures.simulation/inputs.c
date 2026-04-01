@@ -387,15 +387,9 @@ void read_input_rasters(struct RasterInputs inputs, struct Segments *segments,
                     ((FCELL *)weights_row)[col] = fc;
                 }
             }
-            /* zones - must be in range -1, 1*/
             if (segments->use_zone) {
                 if (Rast_is_null_value(&((CELL *)zones_row)[col], CELL_TYPE)) {
                     ((CELL *)zones_row)[col] = 0;
-                    isnull = true;
-                }
-                else {
-                    c = ((CELL *)zones_row)[col];
-                    ((CELL *)zones_row)[col] = c;
                 }
             }
             /* flooding; run only for cells which will be part of simulation
@@ -862,7 +856,7 @@ void read_potential_file(struct Potential *potentialInfo, map_int_t *region_map,
         ntokens = G_number_of_tokens(tokens);
         if (ntokens == 0)
             continue;
-        // id + intercept + devpressure + predictores
+        // id + intercept + devpressure + predictors
         if (ntokens != num_predictors + 3)
             G_fatal_error(_("Potential: wrong number of columns: %s"), buf);
 
@@ -1460,31 +1454,31 @@ void initialize_zoning_effects(struct ZoningEffects *zoning_effects)
     zoning_effects->num_regions = 0;
     zoning_effects->zones = (struct Zone *)G_malloc(sizeof(struct Zone) *
                                                     zoning_effects->num_zones);
-    zoning_effects->zones[0].id = 100;
+    zoning_effects->zones[0].id = 100; // Residential High Density
     zoning_effects->zones[0].effect = 0;
-    zoning_effects->zones[1].id = 101;
+    zoning_effects->zones[1].id = 101; // Residential Medium-High Density
     zoning_effects->zones[1].effect = -0.124;
-    zoning_effects->zones[2].id = 110;
+    zoning_effects->zones[2].id = 110; // Residential Medium Density
     zoning_effects->zones[2].effect = -0.440;
-    zoning_effects->zones[3].id = 120;
+    zoning_effects->zones[3].id = 120; // Residential Medium-Low Density
     zoning_effects->zones[3].effect = -0.656;
-    zoning_effects->zones[4].id = 130;
+    zoning_effects->zones[4].id = 130; // Residential Low Density
     zoning_effects->zones[4].effect = -0.78;
-    zoning_effects->zones[5].id = 131;
+    zoning_effects->zones[5].id = 131; // Residential Rural and Agricultural
     zoning_effects->zones[5].effect = -0.79;
-    zoning_effects->zones[6].id = 200;
+    zoning_effects->zones[6].id = 200; // Commercial
     zoning_effects->zones[6].effect = -0.157;
-    zoning_effects->zones[7].id = 201;
+    zoning_effects->zones[7].id = 201; // Industrial
     zoning_effects->zones[7].effect = -0.026;
-    zoning_effects->zones[8].id = 202;
+    zoning_effects->zones[8].id = 202; // Office and Institutional
     zoning_effects->zones[8].effect = -0.127;
-    zoning_effects->zones[9].id = 203;
+    zoning_effects->zones[9].id = 203; // Parks and Recreation
     zoning_effects->zones[9].effect = -0.817;
-    zoning_effects->zones[10].id = 300;
+    zoning_effects->zones[10].id = 300; // Mixed Use
     zoning_effects->zones[10].effect = -0.105;
-    zoning_effects->zones[11].id = 301;
+    zoning_effects->zones[11].id = 301; // Planned Use
     zoning_effects->zones[11].effect = 0.115;
-    zoning_effects->zones[12].id = 302;
+    zoning_effects->zones[12].id = 302; // Downtown
     zoning_effects->zones[12].effect = -1;
     zoning_effects->zones[13].id = 0; // null value, no effect
     zoning_effects->zones[13].effect = 0;
@@ -1514,7 +1508,7 @@ void read_zoning_file(struct ZoningEffects *zoning_effects,
         header_tokens = G_tokenize2(buf, zoning_effects->separator, td);
         header_ntokens = G_number_of_tokens(header_tokens);
         /* number of zones is number of headers minus 2 (region ID and
-         * intercept)*/
+         * stringency)*/
         int num_zones = header_ntokens - 2;
         /* TODO could add a check here against the number of unique zones in
          * zoning file*/
@@ -1560,13 +1554,12 @@ void read_zoning_file(struct ZoningEffects *zoning_effects,
                 region_counter++;
                 G_chop(tokens[1]);
                 stringency = atof(tokens[1]);
-
                 if (stringency <= 0 || stringency >= 2) {
-                    G_fatal_error(
-                        _("Zoning stringency must be a value between 0 and 2 "
-                          "not including 0 or 2 (region %d, index %d). If you "
-                          "do not wish to assign a zone stringency set to 1"),
-                        region, *idx);
+                    G_fatal_error(_("Zoning stringency must be a value between "
+                                    "0 and 2 not including 0 or 2 (region %d, "
+                                    "index %d, stringency %.2f). If you do not "
+                                    "wish to assign stringency, set to 1"),
+                                  region, *idx, stringency);
                 }
                 if (stringency == 1)
                     stringency_counter++;
@@ -1576,10 +1569,18 @@ void read_zoning_file(struct ZoningEffects *zoning_effects,
                                   zoning_effects->stringency[*idx]);
                 /* If zones are included in file, set zones per region */
                 if (num_zones > 0) {
-                    for (j = 2; j <= num_zones; j++) {
+                    for (j = 2; j < num_zones + 2; j++) {
                         G_chop(tokens[j]);
                         G_chop(header_tokens[j]);
                         val = atof(tokens[j]);
+                        if (val < -1 || val > 1) {
+                            G_fatal_error(
+                                _("Zoning effect must be a value between -1 "
+                                  "and 1 (region %d, index %d, zoning effect "
+                                  "%.2f). If you do not wish to assign a zone "
+                                  "effect, set to 0"),
+                                region, *idx, val);
+                        }
                         zone_id = atoi(header_tokens[j]);
                         zoning_effects->zones[zone_counter].region = *idx;
                         zoning_effects->zones[zone_counter].id = zone_id;
@@ -1613,22 +1614,29 @@ float zone_to_effect(struct ZoningEffects *zoning_effects, int id,
     int num_zones = zoning_effects->num_zones;
     int num_regions = zoning_effects->num_regions;
     if (num_regions > 0) {
-        for (int i = 0; i <= (num_zones * num_regions); i++) {
+        for (int i = 0; i < (num_zones * num_regions); i++) {
             if ((zoning_effects->zones[i].id == id) &&
                 (zoning_effects->zones[i].region == region_idx)) {
                 return zoning_effects->zones[i].effect;
             }
         }
         // not found
-        return 0;
+        G_fatal_error(_("No zoning effect found for zone id %d in region index "
+                        "%d. Values in zoning raster (zoning IDs) must be one "
+                        "of the predefined IDs (see documentation) or must be "
+                        "provided in zoning_effects file."),
+                      id, region_idx);
     }
     else {
-        for (int i = 0; i <= num_zones; i++) {
+        for (int i = 0; i < num_zones; i++) {
             if (zoning_effects->zones[i].id == id) {
                 return zoning_effects->zones[i].effect;
             }
         }
-        // not found
-        return 0;
+        G_fatal_error(
+            _("No zoning effect found for zone id %d. Values in zoning raster "
+              "(zoning IDs) must be one of the predefined IDs (see "
+              "documentation) or must be provided in zoning_effects file."),
+            id);
     }
 }

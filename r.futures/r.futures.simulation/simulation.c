@@ -175,14 +175,6 @@ double get_develop_probability_xy(struct Segments *segments, FCELL *values,
             else if (effect > 0)
                 probability = (probability + effect) - (probability * effect);
         }
-        // If there is no match just keep probability unchanged and print
-        // warning
-        // TODO move this check elsewhere
-        else {
-            G_warning("No match found for zoning district (%d). No effects are "
-                      "applied for this districts.",
-                      zone);
-        }
     }
 
     return probability;
